@@ -1,0 +1,8 @@
+# Layer 4 - Delegation Layer (Subagents)
+# Subagents are not warranted for the O.D.I.N. v0.2.2 MVP (Phase 1) per PRD Section 6.
+# This file serves as a structural placeholder to fulfill the AIM 5-layer typology requirement.
+
+name: Planner
+role: Central Orchestrator
+status: disabled
+description: "Placeholder for future autonomous backlog planning (Phase 3)."
