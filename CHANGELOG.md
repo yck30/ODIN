@@ -14,3 +14,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Configured Python `pre-commit` hook for `gitleaks` scanning.
 - **Milestone 2**: Implemented four-persona cognitive engine (Quant, Strategist, Behaviorist, Judge) using `google-genai` and `pydantic`.
 - **Milestone 3**: Built Streamlit UI with structured intake form and progressive disclosure status widget.
+- **Milestone 4**: Converted side-by-side columns into a mobile-friendly `st.tabs` layout and verified responsive viewport rendering.

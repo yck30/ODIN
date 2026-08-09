@@ -49,52 +49,51 @@ if submitted:
             
             st.divider()
             
-            # 3. Clean Results Display
-            st.header("The Judge's Verdict")
-            judge_res = results["judge"]
+            # 3. Mobile-Friendly Multi-Tab Display
+            st.header("Cognitive Audit Results")
             
-            # Display Final Verdict Prominently
-            st.info(judge_res.final_verdict)
+            tab_verdict, tab_quant, tab_strat, tab_behav = st.tabs([
+                "⚖️ The Verdict", 
+                "📊 The Quant", 
+                "⚔️ The Strategist", 
+                "👁️ The Behaviorist"
+            ])
             
-            st.subheader("Synthesis")
-            st.write(judge_res.synthesis)
-            
-            st.subheader("Actionable Next Steps")
-            for step in judge_res.actionable_next_steps:
-                st.markdown(f"- **{step}**")
-            
-            st.divider()
-            
-            # Raw Data Expanders
-            st.header("Raw Persona Data")
-            col1, col2, col3 = st.columns(3)
-            
-            with col1:
-                with st.expander("📊 The Quant's Analysis"):
-                    q = results["quant"]
-                    st.metric("Expected Value", q.expected_value)
-                    st.write("**Probabilities:**", q.probabilities)
-                    st.write("**Risk Factors:**")
-                    for r in q.risk_factors: st.write(f"- {r}")
-                    st.write("**Analysis:**", q.analysis)
+            with tab_verdict:
+                judge_res = results["judge"]
+                # Display Final Verdict Prominently
+                st.info(judge_res.final_verdict)
+                
+                st.subheader("Synthesis")
+                st.write(judge_res.synthesis)
+                
+                st.subheader("Actionable Next Steps")
+                for step in judge_res.actionable_next_steps:
+                    st.markdown(f"- **{step}**")
                     
-            with col2:
-                with st.expander("⚔️ The Strategist's Analysis"):
-                    s = results["strategist"]
-                    st.metric("Reversibility Score (1-10)", s.reversibility_score)
-                    st.write("**Adversarial Moves:**")
-                    for a in s.adversarial_moves: st.write(f"- {a}")
-                    st.write("**Strategic Rec:**", s.strategic_recommendation)
-                    st.write("**Analysis:**", s.analysis)
-                    
-            with col3:
-                with st.expander("👁️ The Behaviorist's Analysis"):
-                    b = results["behaviorist"]
-                    st.write("**Cognitive Biases:**")
-                    for bias in b.cognitive_biases: st.write(f"- {bias}")
-                    st.write("**Blind Spots:**")
-                    for blind in b.blind_spots: st.write(f"- {blind}")
-                    st.write("**Audit:**", b.behavioral_audit)
+            with tab_quant:
+                q = results["quant"]
+                st.metric("Expected Value", q.expected_value)
+                st.write("**Probabilities:**", q.probabilities)
+                st.write("**Risk Factors:**")
+                for r in q.risk_factors: st.write(f"- {r}")
+                st.write("**Analysis:**", q.analysis)
+                
+            with tab_strat:
+                s = results["strategist"]
+                st.metric("Reversibility Score (1-10)", s.reversibility_score)
+                st.write("**Adversarial Moves:**")
+                for a in s.adversarial_moves: st.write(f"- {a}")
+                st.write("**Strategic Rec:**", s.strategic_recommendation)
+                st.write("**Analysis:**", s.analysis)
+                
+            with tab_behav:
+                b = results["behaviorist"]
+                st.write("**Cognitive Biases:**")
+                for bias in b.cognitive_biases: st.write(f"- {bias}")
+                st.write("**Blind Spots:**")
+                for blind in b.blind_spots: st.write(f"- {blind}")
+                st.write("**Audit:**", b.behavioral_audit)
 
         except Exception as e:
             status_container.update(label="Audit Failed.", state="error")
