@@ -1,3 +1,8 @@
+import sys
+import os
+# Fix for Streamlit Cloud ModuleNotFoundError
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import streamlit as st
 import asyncio
 from src.engine.orchestrator import execute_full_analysis_async
