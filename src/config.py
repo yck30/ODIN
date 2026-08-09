@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # We will read from Streamlit secrets in the app, but for raw python scripts, this works.
-GEMINI_MODEL = "gemini-2.5-flash"
+GEMINI_MODEL = "gemini-1.5-flash"
 
 def get_api_key():
     import streamlit as st
