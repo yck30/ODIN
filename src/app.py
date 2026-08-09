@@ -1,0 +1,101 @@
+import streamlit as st
+import asyncio
+from src.engine.orchestrator import execute_full_analysis_async
+
+st.set_page_config(page_title="O.D.I.N. - Cognitive Engine", layout="wide")
+
+st.title("O.D.I.N. 👁️")
+st.markdown("### Omni-Dimensional Intelligence Node")
+st.markdown("Submit your high-stakes dilemma for a rigorous 4-persona cognitive audit.")
+
+with st.sidebar:
+    st.header("About O.D.I.N.")
+    st.markdown("O.D.I.N. processes decisions through:")
+    st.markdown("1. **The Quant** (Expected Value)")
+    st.markdown("2. **The Strategist** (Game Theory)")
+    st.markdown("3. **The Behaviorist** (Bias Audit)")
+    st.markdown("4. **The Judge** (First Principles Synthesis)")
+
+# 1. Structured Intake Form
+with st.form("intake_form"):
+    st.subheader("Decision Intake")
+    goal = st.text_input("What is the ultimate goal or decision to be made?")
+    context = st.text_area("What is the current situation and context?")
+    risks = st.text_area("What are your biggest known fears or risks regarding this?")
+    
+    submitted = st.form_submit_button("Run Cognitive Audit")
+
+if submitted:
+    if not goal.strip() or not context.strip():
+        st.warning("Please provide at least a Goal and Context.")
+    else:
+        # Construct the unified scenario string
+        scenario = f"GOAL: {goal}\nCONTEXT: {context}\nKNOWN RISKS: {risks}"
+        
+        # 2. Progressive Disclosure Status
+        status_container = st.status("Initializing O.D.I.N. cognitive engine...", expanded=True)
+        
+        try:
+            status_container.write("🧠 Parallel processing initiated...")
+            status_container.write("⚙️ The Quant is running expected value calculations.")
+            status_container.write("⚔️ The Strategist is modeling adversarial vectors.")
+            status_container.write("👁️ The Behaviorist is auditing for cognitive biases.")
+            
+            # Execute engine
+            results = asyncio.run(execute_full_analysis_async(scenario))
+            
+            status_container.write("⚖️ The Judge is synthesizing the final verdict.")
+            status_container.update(label="Audit Complete!", state="complete", expanded=False)
+            
+            st.divider()
+            
+            # 3. Clean Results Display
+            st.header("The Judge's Verdict")
+            judge_res = results["judge"]
+            
+            # Display Final Verdict Prominently
+            st.info(judge_res.final_verdict)
+            
+            st.subheader("Synthesis")
+            st.write(judge_res.synthesis)
+            
+            st.subheader("Actionable Next Steps")
+            for step in judge_res.actionable_next_steps:
+                st.markdown(f"- **{step}**")
+            
+            st.divider()
+            
+            # Raw Data Expanders
+            st.header("Raw Persona Data")
+            col1, col2, col3 = st.columns(3)
+            
+            with col1:
+                with st.expander("📊 The Quant's Analysis"):
+                    q = results["quant"]
+                    st.metric("Expected Value", q.expected_value)
+                    st.write("**Probabilities:**", q.probabilities)
+                    st.write("**Risk Factors:**")
+                    for r in q.risk_factors: st.write(f"- {r}")
+                    st.write("**Analysis:**", q.analysis)
+                    
+            with col2:
+                with st.expander("⚔️ The Strategist's Analysis"):
+                    s = results["strategist"]
+                    st.metric("Reversibility Score (1-10)", s.reversibility_score)
+                    st.write("**Adversarial Moves:**")
+                    for a in s.adversarial_moves: st.write(f"- {a}")
+                    st.write("**Strategic Rec:**", s.strategic_recommendation)
+                    st.write("**Analysis:**", s.analysis)
+                    
+            with col3:
+                with st.expander("👁️ The Behaviorist's Analysis"):
+                    b = results["behaviorist"]
+                    st.write("**Cognitive Biases:**")
+                    for bias in b.cognitive_biases: st.write(f"- {bias}")
+                    st.write("**Blind Spots:**")
+                    for blind in b.blind_spots: st.write(f"- {blind}")
+                    st.write("**Audit:**", b.behavioral_audit)
+
+        except Exception as e:
+            status_container.update(label="Audit Failed.", state="error")
+            st.error(f"An error occurred: {e}")
