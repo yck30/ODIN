@@ -15,3 +15,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Milestone 2**: Implemented four-persona cognitive engine (Quant, Strategist, Behaviorist, Judge) using `google-genai` and `pydantic`.
 - **Milestone 3**: Built Streamlit UI with structured intake form and progressive disclosure status widget.
 - **Milestone 4**: Converted side-by-side columns into a mobile-friendly `st.tabs` layout and verified responsive viewport rendering.
+- **Milestone 5**: Hardened Streamlit inputs (`max_chars`), fortified Pydantic schemas (`max_length`), and sanitized Python exception outputs for production security.

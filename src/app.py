@@ -24,9 +24,9 @@ with st.sidebar:
 # 1. Structured Intake Form
 with st.form("intake_form"):
     st.subheader("Decision Intake")
-    goal = st.text_input("What is the ultimate goal or decision to be made?")
-    context = st.text_area("What is the current situation and context?")
-    risks = st.text_area("What are your biggest known fears or risks regarding this?")
+    goal = st.text_input("What is the ultimate goal or decision to be made?", max_chars=200)
+    context = st.text_area("What is the current situation and context?", max_chars=2000)
+    risks = st.text_area("What are your biggest known fears or risks regarding this?", max_chars=2000)
     
     submitted = st.form_submit_button("Run Cognitive Audit")
 
@@ -102,4 +102,6 @@ if submitted:
 
         except Exception as e:
             status_container.update(label="Audit Failed.", state="error")
-            st.error(f"An error occurred: {e}")
+            import logging
+            logging.error(f"Engine Exception: {e}", exc_info=True)
+            st.error("An error occurred while generating the audit. Please check your API key, ensure the scenario isn't too vague, and try again.")
