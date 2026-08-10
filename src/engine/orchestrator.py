@@ -1,4 +1,5 @@
 import asyncio
+import time
 from google import genai
 from google.genai import types
 from src.config import get_api_key, GEMINI_MODEL
@@ -11,14 +12,11 @@ def get_client():
         raise ValueError("GEMINI_API_KEY is not set.")
     return genai.Client(api_key=api_key)
 
-async def _call_gemini_async(client: genai.Client, system_instruction: str, user_prompt: str, schema_class):
-    # Using the standard sync SDK method, but wrapping it in a thread for parallel execution via asyncio
-    # google-genai does have experimental async, but `asyncio.to_thread` with the sync client is very stable.
+async def _call_gemini_async(client: genai.Client, system_instruction: str, user_prompt: str, schema_class, max_retries: int = 4):
     loop = asyncio.get_running_loop()
     
     def _make_call():
-        import time
-        for attempt in range(3):
+        for attempt in range(max_retries):
             try:
                 return client.models.generate_content(
                     model=GEMINI_MODEL,
@@ -31,21 +29,20 @@ async def _call_gemini_async(client: genai.Client, system_instruction: str, user
                     ),
                 )
             except Exception as e:
-                if ("503" in str(e) or "429" in str(e) or "UNAVAILABLE" in str(e)) and attempt < 2:
-                    time.sleep(2 * (attempt + 1))
+                err_str = str(e)
+                # Exponential backoff for Rate Limits (429) or Service Unavailable (503)
+                if ("429" in err_str or "RESOURCE_EXHAUSTED" in err_str or "503" in err_str or "UNAVAILABLE" in err_str) and attempt < max_retries - 1:
+                    wait_time = (2 ** (attempt + 2)) + 1 # 5s, 9s, 17s
+                    time.sleep(wait_time)
                     continue
                 raise e
 
     response = await loop.run_in_executor(None, _make_call)
     
-    # Parse the structured JSON into the Pydantic model
-    # Note: google-genai usually returns response.parsed if we pass response_schema correctly.
     if hasattr(response, 'parsed') and response.parsed:
         return response.parsed
     else:
-        # Fallback if parsed isn't automatically populated
         return schema_class.model_validate_json(response.text)
-
 
 async def run_quant(client: genai.Client, scenario: str) -> QuantResponse:
     return await _call_gemini_async(client, QUANT_SYSTEM_PROMPT, scenario, QuantResponse)
@@ -57,8 +54,6 @@ async def run_behaviorist(client: genai.Client, scenario: str) -> BehavioristRes
     return await _call_gemini_async(client, BEHAVIORIST_SYSTEM_PROMPT, scenario, BehavioristResponse)
 
 def run_judge_sync(client: genai.Client, scenario: str, quant: QuantResponse, strat: StrategistResponse, behav: BehavioristResponse) -> JudgeResponse:
-    import time
-    # Build prompt for Judge
     judge_prompt = f"""
     USER SCENARIO:
     {scenario}
@@ -78,7 +73,7 @@ def run_judge_sync(client: genai.Client, scenario: str, quant: QuantResponse, st
     Please synthesize this and provide the final verdict.
     """
     
-    for attempt in range(3):
+    for attempt in range(4):
         try:
             response = client.models.generate_content(
                 model=GEMINI_MODEL,
@@ -92,8 +87,9 @@ def run_judge_sync(client: genai.Client, scenario: str, quant: QuantResponse, st
             )
             break
         except Exception as e:
-            if ("503" in str(e) or "429" in str(e) or "UNAVAILABLE" in str(e)) and attempt < 2:
-                time.sleep(2 * (attempt + 1))
+            err_str = str(e)
+            if ("429" in err_str or "RESOURCE_EXHAUSTED" in err_str or "503" in err_str or "UNAVAILABLE" in err_str) and attempt < 3:
+                time.sleep((2 ** (attempt + 2)) + 1)
                 continue
             raise e
     
@@ -101,22 +97,32 @@ def run_judge_sync(client: genai.Client, scenario: str, quant: QuantResponse, st
         return response.parsed
     return JudgeResponse.model_validate_json(response.text)
 
-
-async def execute_full_analysis_async(scenario: str):
+async def execute_full_analysis_async(scenario: str, status_cb=None):
+    """
+    Executes 4-persona analysis sequentially to stay within Gemini API free-tier RPM limits (5 RPM).
+    Accepts an optional callback `status_cb(str)` to push real-time status updates to UI.
+    """
     client = get_client()
-    
-    # Run first 3 in parallel
-    results = await asyncio.gather(
-        run_quant(client, scenario),
-        run_strategist(client, scenario),
-        run_behaviorist(client, scenario)
-    )
-    
-    quant_res, strat_res, behav_res = results
-    
-    # Run judge sequentially
+
+    # 1. Quant Pass
+    if status_cb: status_cb("⚙️ Step 1/4: The Quant is running expected value calculations...")
+    quant_res = await run_quant(client, scenario)
+    await asyncio.sleep(2.5) # Gentle pause to preserve RPM quota
+
+    # 2. Strategist Pass
+    if status_cb: status_cb("⚔️ Step 2/4: The Strategist is modeling adversarial vectors...")
+    strat_res = await run_strategist(client, scenario)
+    await asyncio.sleep(2.5)
+
+    # 3. Behaviorist Pass
+    if status_cb: status_cb("👁️ Step 3/4: The Behaviorist is auditing for cognitive biases...")
+    behav_res = await run_behaviorist(client, scenario)
+    await asyncio.sleep(2.5)
+
+    # 4. Judge Pass
+    if status_cb: status_cb("⚖️ Step 4/4: The Judge is synthesizing the final verdict...")
     judge_res = run_judge_sync(client, scenario, quant_res, strat_res, behav_res)
-    
+
     return {
         "quant": quant_res,
         "strategist": strat_res,

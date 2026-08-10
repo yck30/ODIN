@@ -41,15 +41,13 @@ if submitted:
         status_container = st.status("Initializing O.D.I.N. cognitive engine...", expanded=True)
         
         try:
-            status_container.write("🧠 Parallel processing initiated...")
-            status_container.write("⚙️ The Quant is running expected value calculations.")
-            status_container.write("⚔️ The Strategist is modeling adversarial vectors.")
-            status_container.write("👁️ The Behaviorist is auditing for cognitive biases.")
+            # Helper to update UI dynamically during sequential processing
+            def update_status(text: str):
+                status_container.write(text)
+
+            # Execute engine sequentially with status callback
+            results = asyncio.run(execute_full_analysis_async(scenario, status_cb=update_status))
             
-            # Execute engine
-            results = asyncio.run(execute_full_analysis_async(scenario))
-            
-            status_container.write("⚖️ The Judge is synthesizing the final verdict.")
             status_container.update(label="Audit Complete!", state="complete", expanded=False)
             
             st.divider()
@@ -104,4 +102,14 @@ if submitted:
             status_container.update(label="Audit Failed.", state="error")
             import logging
             logging.error(f"Engine Exception: {e}", exc_info=True)
-            st.error("An error occurred while generating the audit. Please check your API key, ensure the scenario isn't too vague, and try again.")
+            err_msg = str(e)
+            if "429" in err_msg or "RESOURCE_EXHAUSTED" in err_msg:
+                st.error("⏳ **Gemini Free Tier Limit Reached**")
+                st.warning("""
+                Google Gemini Free Tier daily requests (20 RPD) or per-minute rate limits have been temporarily reached.
+                - **Daily Quotas:** Reset automatically every **24 hours / midnight UTC**.
+                - **Temporary Spikes:** Wait 1–2 minutes before trying again.
+                - **Instant Fix:** Upgrade your key to a Pay-As-You-Go project in [Google AI Studio](https://aistudio.google.com/) or switch your model API key.
+                """)
+            else:
+                st.error("An error occurred while generating the audit. Please check your API key, ensure the scenario isn't too vague, and try again.")

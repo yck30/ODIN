@@ -10,6 +10,6 @@ This backlog tracks the development milestones for Phase 1 (Cloud MVP) and futur
 - [x] **Milestone 4:** Multi-tab deliverable rendering built and verified on a phone browser.
 - [x] **Milestone 5:** Security- and schema-verification pass completed before Phase 1 is declared done.
 
-## Future-Readiness (Phase 2+)
-- [ ] **Phase 2 — v1.0 Knowledge Hub:** ChromaDB integration for persistent case history (Trigger: Phase 1 stable, need persistent memory).
-- [ ] **Phase 3 — v2.0 Autonomous Agentic State Machine:** LangGraph rebuild, Python interpreter tool, subagent topology (Trigger: Phase 2 stable, genuine need for standing autonomous agent).
+## Future-Readiness (Phase 2 & 3)
+- [ ] **Phase 2 — v1.0 JARVIS Interface & Knowledge Hub:** Pivot UI/UX to a modern, animated, tech-aesthetic web dashboard (Next.js/React). Implement real-time 2-way voice interaction (via Gemini Live API / WebSockets) to act as a precursor for true agentic intelligence. Integrate ChromaDB for persistent case history and memory.
+- [ ] **Phase 3 — v2.0 Autonomous Agentic State Machine:** LangGraph rebuild, Python interpreter tool, and subagent topology. (Trigger: Phase 2 stable, genuine need for standing autonomous agent that can act on the user's behalf).
