@@ -17,16 +17,24 @@ async def _call_gemini_async(client: genai.Client, system_instruction: str, user
     loop = asyncio.get_running_loop()
     
     def _make_call():
-        return client.models.generate_content(
-            model=GEMINI_MODEL,
-            contents=user_prompt,
-            config=types.GenerateContentConfig(
-                system_instruction=system_instruction,
-                response_mime_type="application/json",
-                response_schema=schema_class,
-                temperature=0.2, # Low temperature for more deterministic analysis
-            ),
-        )
+        import time
+        for attempt in range(3):
+            try:
+                return client.models.generate_content(
+                    model=GEMINI_MODEL,
+                    contents=user_prompt,
+                    config=types.GenerateContentConfig(
+                        system_instruction=system_instruction,
+                        response_mime_type="application/json",
+                        response_schema=schema_class,
+                        temperature=0.2, # Low temperature for more deterministic analysis
+                    ),
+                )
+            except Exception as e:
+                if ("503" in str(e) or "429" in str(e) or "UNAVAILABLE" in str(e)) and attempt < 2:
+                    time.sleep(2 * (attempt + 1))
+                    continue
+                raise e
 
     response = await loop.run_in_executor(None, _make_call)
     
@@ -49,6 +57,7 @@ async def run_behaviorist(client: genai.Client, scenario: str) -> BehavioristRes
     return await _call_gemini_async(client, BEHAVIORIST_SYSTEM_PROMPT, scenario, BehavioristResponse)
 
 def run_judge_sync(client: genai.Client, scenario: str, quant: QuantResponse, strat: StrategistResponse, behav: BehavioristResponse) -> JudgeResponse:
+    import time
     # Build prompt for Judge
     judge_prompt = f"""
     USER SCENARIO:
@@ -69,16 +78,24 @@ def run_judge_sync(client: genai.Client, scenario: str, quant: QuantResponse, st
     Please synthesize this and provide the final verdict.
     """
     
-    response = client.models.generate_content(
-        model=GEMINI_MODEL,
-        contents=judge_prompt,
-        config=types.GenerateContentConfig(
-            system_instruction=JUDGE_SYSTEM_PROMPT,
-            response_mime_type="application/json",
-            response_schema=JudgeResponse,
-            temperature=0.2,
-        ),
-    )
+    for attempt in range(3):
+        try:
+            response = client.models.generate_content(
+                model=GEMINI_MODEL,
+                contents=judge_prompt,
+                config=types.GenerateContentConfig(
+                    system_instruction=JUDGE_SYSTEM_PROMPT,
+                    response_mime_type="application/json",
+                    response_schema=JudgeResponse,
+                    temperature=0.2,
+                ),
+            )
+            break
+        except Exception as e:
+            if ("503" in str(e) or "429" in str(e) or "UNAVAILABLE" in str(e)) and attempt < 2:
+                time.sleep(2 * (attempt + 1))
+                continue
+            raise e
     
     if hasattr(response, 'parsed') and response.parsed:
         return response.parsed
