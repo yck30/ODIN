@@ -299,6 +299,19 @@ body::after {
   color: var(--text-muted);
 }
 
+.hud-textarea:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  background: rgba(10, 15, 30, 0.5);
+  border-color: rgba(255, 255, 255, 0.06);
+  user-select: none;
+}
+
+.hud-input:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 /* Tabs Navigation */
 .hud-tabs {
   display: flex;

@@ -133,12 +133,14 @@ export default function JarvisDashboard() {
   };
 
   const handleLoadSample = () => {
+    if (!passcode) return;
     setCoreObjectives(SAMPLE_DILEMMA.objectives);
     setKnownConstraints(SAMPLE_DILEMMA.constraints);
     setRawNarrative(SAMPLE_DILEMMA.narrative);
   };
 
   const handleClearForm = () => {
+    if (!passcode && !coreObjectives && !knownConstraints && !rawNarrative) return;
     setCoreObjectives("");
     setKnownConstraints("");
     setRawNarrative("");
@@ -147,6 +149,10 @@ export default function JarvisDashboard() {
   };
 
   const handleExecuteAnalysis = async () => {
+    if (!passcode) {
+      setAnalysisError("Security clearance required. Please authorize with a valid passcode above.");
+      return;
+    }
     setAnalysisError("");
     setAnalysisResult(null);
     setAnalyzing(true);
@@ -345,9 +351,14 @@ export default function JarvisDashboard() {
       <section className="jarvis-card stagger-item">
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.2rem", flexWrap: "wrap", gap: "0.5rem" }}>
           <div>
-            <h2 className="font-display" style={{ fontSize: "1.2rem", color: "var(--accent-cyan)", letterSpacing: "0.06em" }}>
-              DECISION INTAKE CONSOLE
-            </h2>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
+              <h2 className="font-display" style={{ fontSize: "1.2rem", color: "var(--accent-cyan)", letterSpacing: "0.06em" }}>
+                DECISION INTAKE CONSOLE
+              </h2>
+              <span className={`status-pill ${passcode ? "online" : "warning"}`}>
+                {passcode ? "READY" : "LOCKED"}
+              </span>
+            </div>
             <p style={{ color: "var(--text-secondary)", fontSize: "0.82rem", marginTop: "0.2rem" }}>
               Submit high-stakes dilemmas for 4-persona mathematical, strategic, and behavioral arbitration.
             </p>
@@ -355,62 +366,97 @@ export default function JarvisDashboard() {
           <div style={{ display: "flex", gap: "0.5rem" }}>
             <button
               onClick={handleLoadSample}
-              disabled={analyzing}
+              disabled={!passcode || analyzing}
               className="hud-button"
               style={{ fontSize: "0.75rem", padding: "0.4rem 0.8rem" }}
+              title={!passcode ? "Authorize passcode above to load sample dilemma" : "Load sample dilemma"}
             >
               LOAD SAMPLE DILEMMA
             </button>
             <button
               onClick={handleClearForm}
-              disabled={analyzing}
+              disabled={!passcode || analyzing}
               className="hud-button"
               style={{ fontSize: "0.75rem", padding: "0.4rem 0.8rem", color: "var(--text-muted)", borderColor: "var(--border-subtle)" }}
+              title={!passcode ? "Terminal is locked" : "Clear fields"}
             >
               CLEAR
             </button>
           </div>
         </div>
 
+        {/* Lock Banner when Unauthorized */}
+        {!passcode && (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: "1rem",
+              padding: "0.85rem 1.1rem",
+              marginBottom: "1.2rem",
+              background: "rgba(245, 158, 11, 0.08)",
+              border: "1px dashed rgba(245, 158, 11, 0.45)",
+              borderRadius: "8px",
+              color: "var(--accent-amber)",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+              <span style={{ fontSize: "1.25rem" }}>🔒</span>
+              <div>
+                <div className="font-mono" style={{ fontSize: "0.82rem", fontWeight: 700, letterSpacing: "0.04em" }}>
+                  TERMINAL LOCKED — SECURITY CLEARANCE REQUIRED
+                </div>
+                <div style={{ fontSize: "0.78rem", color: "var(--text-secondary)", marginTop: "0.15rem" }}>
+                  All intake fields and reasoning synthesis controls are locked. Please authenticate via the Security Clearance Gate above to initialize the terminal.
+                </div>
+              </div>
+            </div>
+            <span className="status-pill warning" style={{ whiteSpace: "nowrap" }}>
+              GATE RESTRICTED
+            </span>
+          </div>
+        )}
+
         <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
           <div>
             <label className="font-mono" style={{ display: "block", fontSize: "0.78rem", color: "var(--accent-cyan)", marginBottom: "0.4rem" }}>
-              CORE OBJECTIVES (PRIMARY OUTCOMES)
+              CORE OBJECTIVES (PRIMARY OUTCOMES) {!passcode && <span style={{ color: "var(--accent-amber)", fontSize: "0.72rem" }}>(LOCKED)</span>}
             </label>
             <textarea
               className="hud-textarea"
-              placeholder="e.g. Determine whether to pivot GTM strategy from enterprise direct sales to self-serve PLG..."
+              placeholder={!passcode ? "[TERMINAL LOCKED] Authenticate via Security Clearance Gate above to enter core objectives..." : "e.g. Determine whether to pivot GTM strategy from enterprise direct sales to self-serve PLG..."}
               value={coreObjectives}
               onChange={(e) => setCoreObjectives(e.target.value)}
-              disabled={analyzing}
+              disabled={!passcode || analyzing}
               rows={2}
             />
           </div>
 
           <div>
             <label className="font-mono" style={{ display: "block", fontSize: "0.78rem", color: "var(--accent-blue)", marginBottom: "0.4rem" }}>
-              KNOWN CONSTRAINTS (RUNWAY, CAPITAL, TIMELINE, TEAMS)
+              KNOWN CONSTRAINTS (RUNWAY, CAPITAL, TIMELINE, TEAMS) {!passcode && <span style={{ color: "var(--accent-amber)", fontSize: "0.72rem" }}>(LOCKED)</span>}
             </label>
             <textarea
               className="hud-textarea"
-              placeholder="e.g. 6 months of cash remaining ($300k). 4 engineers, 1 sales lead. Must achieve cash flow break-even before month 7..."
+              placeholder={!passcode ? "[TERMINAL LOCKED] Authenticate via Security Clearance Gate above to enter constraints..." : "e.g. 6 months of cash remaining ($300k). 4 engineers, 1 sales lead. Must achieve cash flow break-even before month 7..."}
               value={knownConstraints}
               onChange={(e) => setKnownConstraints(e.target.value)}
-              disabled={analyzing}
+              disabled={!passcode || analyzing}
               rows={2}
             />
           </div>
 
           <div>
             <label className="font-mono" style={{ display: "block", fontSize: "0.78rem", color: "var(--accent-indigo)", marginBottom: "0.4rem" }}>
-              RAW NARRATIVE (FULL SITUATIONAL CONTEXT & CONFLICTING SIGNALS)
+              RAW NARRATIVE (FULL SITUATIONAL CONTEXT & CONFLICTING SIGNALS) {!passcode && <span style={{ color: "var(--accent-amber)", fontSize: "0.72rem" }}>(LOCKED)</span>}
             </label>
             <textarea
               className="hud-textarea"
-              placeholder="Describe the full backstory, conflicting internal opinions, external risks, procurement delays, customer signals, and dilemma..."
+              placeholder={!passcode ? "[TERMINAL LOCKED] Authenticate via Security Clearance Gate above to enter narrative context..." : "Describe the full backstory, conflicting internal opinions, external risks, procurement delays, customer signals, and dilemma..."}
               value={rawNarrative}
               onChange={(e) => setRawNarrative(e.target.value)}
-              disabled={analyzing}
+              disabled={!passcode || analyzing}
               rows={4}
             />
           </div>
@@ -427,11 +473,20 @@ export default function JarvisDashboard() {
             </div>
             <button
               onClick={handleExecuteAnalysis}
-              disabled={analyzing || !coreObjectives.trim() || !knownConstraints.trim() || !rawNarrative.trim()}
+              disabled={!passcode || analyzing || !coreObjectives.trim() || !knownConstraints.trim() || !rawNarrative.trim()}
               className="hud-button"
-              style={{ padding: "0.8rem 1.75rem", fontSize: "0.9rem", fontWeight: 700 }}
+              style={{
+                padding: "0.8rem 1.75rem",
+                fontSize: "0.9rem",
+                fontWeight: 700,
+                ...(!passcode ? { borderColor: "rgba(245, 158, 11, 0.4)", color: "var(--accent-amber)" } : {}),
+              }}
             >
-              {analyzing ? "COGNITIVE SYNTHESIS IN PROGRESS..." : "EXECUTE DECISION ANALYSIS"}
+              {!passcode
+                ? "🔒 CLEARANCE REQUIRED TO EXECUTE"
+                : analyzing
+                ? "COGNITIVE SYNTHESIS IN PROGRESS..."
+                : "EXECUTE DECISION ANALYSIS"}
             </button>
           </div>
         </div>
