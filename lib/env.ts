@@ -39,7 +39,7 @@ export function isValidEncryptionKey(key?: string): boolean {
  */
 export function getEnvDiagnostics(): SystemEnvDiagnostics {
   const geminiKey = process.env.GEMINI_API_KEY?.trim();
-  const geminiModel = process.env.GEMINI_MODEL?.trim() || "gemini-2.5-flash";
+  const geminiModel = process.env.GEMINI_MODEL?.trim() || "gemini-3.6-flash";
   const supabaseUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL)?.trim();
   const supabaseAnon = (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY)?.trim();
   const supabaseService = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();

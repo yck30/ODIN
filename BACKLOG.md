@@ -16,7 +16,7 @@ This backlog tracks the development milestones for Phase 2 (JARVIS Interface & K
 
 ### Must-Have
 - [x] **M1:** Next.js scaffold deployed on Vercel free tier; environment variables (Gemini + Supabase keys) configured; gitleaks pre-commit hook carried over.
-- [ ] **M2:** Four-call sequential engine ported to Next.js API routes (Server-side only); Section 20 prompts and schemas copied verbatim; Gemini 3.5 Flash pinned.
+- [x] **M2:** Four-call sequential engine ported to Next.js API routes (Server-side only); Section 20 prompts and schemas copied verbatim; Gemini 3.5 Flash pinned.
 - [ ] **M3:** Supabase schema (Postgres + pgvector) migrated with RLS enabled; app-layer encryption on `raw_narrative` implemented.
 - [ ] **M4:** Web Speech API voice I/O wired to the intake flow and report readback.
 - [ ] **M5:** JARVIS-aesthetic UI build (case-history list, detail views, progressive-disclosure status strings).

@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Phase 2 Milestone 2 (M2) — Cognitive Reasoning Engine Ported to Next.js**:
+  - Ported the 4-persona sequential reasoning engine (The Quant, The Strategist, The Behaviorist, The Judge) to server-side Next.js using `@google/genai`.
+  - Embedded verbatim Section 20 system prompts and strict JSON schema contracts (`lib/engine/prompts.ts`, `lib/engine/schemas.ts`, `lib/engine/types.ts`).
+  - Implemented resilient sequential orchestrator (`lib/engine/orchestrator.ts`) with exponential backoff retries for 429/503 rate limits and 2-second RPM quota pacing.
+  - Pinned cognitive engine model string to `gemini-3.6-flash`.
+  - Built serverless API route `app/api/analyze/route.ts` with input validation and dual output modes: standard JSON response and Server-Sent Events (SSE) streaming for real-time UI status updates.
+  - Implemented end-to-end verification test suite (`scripts/test-engine.ts`) verifying full synthesis, Section 20 schema compliance, 3 sequenced actions, and valid Mermaid.js flowchart generation.
 - **Phase 2 Milestone 1 (M1) — Next.js Scaffold, JARVIS UI & Vercel Deployment**:
   - Bootstrapped Next.js 15 (React 19, TypeScript) App Router scaffold with zero-conflict coexistence alongside legacy Phase 1 Python files.
   - Implemented JARVIS aesthetic design system (`app/globals.css`) adhering to Emil Kowalski & Impeccable motion principles: custom cubic-bezier easings (`cubic-bezier(0.23, 1, 0.32, 1)`), tactile `:active` press scaling (`0.97`), staggered entrances, and deep space glassmorphic cards.
