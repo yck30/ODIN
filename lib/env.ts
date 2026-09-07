@@ -57,7 +57,11 @@ export function verifyPasscode(candidate?: string | null): boolean {
  */
 export function getEnvDiagnostics(): SystemEnvDiagnostics {
   const geminiKey = process.env.GEMINI_API_KEY?.trim();
-  const geminiModel = process.env.GEMINI_MODEL?.trim() || "gemini-3.6-flash";
+  const rawModel = process.env.GEMINI_MODEL?.trim();
+  const geminiModel =
+    !rawModel || rawModel.includes("gemini-2.5") || rawModel.includes("gemini-1.5")
+      ? "gemini-3.6-flash"
+      : rawModel;
   const supabaseUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL)?.trim();
   const supabaseAnon = (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY)?.trim();
   const supabaseService = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
@@ -99,8 +103,14 @@ export function getServerGeminiConfig() {
     throw new Error("GEMINI_API_KEY is not configured in environment variables.");
   }
 
+  const rawModel = process.env.GEMINI_MODEL?.trim();
+  const model =
+    !rawModel || rawModel.includes("gemini-2.5") || rawModel.includes("gemini-1.5")
+      ? "gemini-3.6-flash"
+      : rawModel;
+
   return {
     apiKey,
-    model: process.env.GEMINI_MODEL || "gemini-2.5-flash",
+    model,
   };
 }

@@ -23,9 +23,19 @@ import {
 } from "./prompts";
 
 /**
- * Pinned Model String per Section 20 & ARCHITECTURE.md
+ * Resolves and normalizes the active Gemini model.
+ * If GEMINI_MODEL is unset or specifies a deprecated model (e.g. gemini-2.5-flash or gemini-1.5-flash),
+ * it automatically maps to the active standard: gemini-3.6-flash.
  */
-export const PINNED_GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-3.6-flash";
+export function getActiveGeminiModel(): string {
+  const envModel = process.env.GEMINI_MODEL?.trim();
+  if (!envModel || envModel.includes("gemini-2.5") || envModel.includes("gemini-1.5")) {
+    return "gemini-3.6-flash";
+  }
+  return envModel;
+}
+
+export const PINNED_GEMINI_MODEL = getActiveGeminiModel();
 
 /**
  * Progress update callback signature
@@ -40,7 +50,7 @@ function sleep(ms: number): Promise<void> {
 }
 
 /**
- * Robust execution wrapper with exponential backoff for free-tier 429/503 handling
+ * Robust execution wrapper with exponential backoff and automatic deprecated model upgrade
  */
 async function callGeminiWithRetry<T>(
   ai: GoogleGenAI,
@@ -50,11 +60,12 @@ async function callGeminiWithRetry<T>(
   maxRetries = 3
 ): Promise<T> {
   let lastError: unknown;
+  let currentModel = getActiveGeminiModel();
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
       const response = await ai.models.generateContent({
-        model: PINNED_GEMINI_MODEL,
+        model: currentModel,
         contents: userPrompt,
         config: {
           systemInstruction,
@@ -73,6 +84,13 @@ async function callGeminiWithRetry<T>(
     } catch (err: unknown) {
       lastError = err;
       const errString = String(err);
+
+      // If the upstream API indicates model is deprecated or not available, automatically switch to gemini-3.6-flash
+      if (errString.includes("no longer available") || (errString.includes("404") && currentModel !== "gemini-3.6-flash")) {
+        console.warn(`[O.D.I.N. Engine] Model '${currentModel}' unavailable. Upgrading to 'gemini-3.6-flash' and retrying immediately...`);
+        currentModel = "gemini-3.6-flash";
+        continue;
+      }
 
       const isRateLimitOrUnavailable =
         errString.includes("429") ||
@@ -159,7 +177,7 @@ export async function executeSequentialAnalysis(
     behaviorist,
     judge,
     metadata: {
-      model: PINNED_GEMINI_MODEL,
+      model: getActiveGeminiModel(),
       timestamp: new Date().toISOString(),
       totalDurationMs,
     },
