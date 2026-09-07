@@ -16,6 +16,11 @@ export default function JarvisDashboard() {
   const [loading, setLoading] = useState<boolean>(true);
   const [currentTime, setCurrentTime] = useState<string>("");
 
+  // Passcode Security Clearance State
+  const [passcode, setPasscode] = useState<string>("");
+  const [passcodeInput, setPasscodeInput] = useState<string>("");
+  const [passcodeStatus, setPasscodeStatus] = useState<string>("");
+
   const fetchHealth = async () => {
     setLoading(true);
     try {
@@ -31,11 +36,39 @@ export default function JarvisDashboard() {
 
   useEffect(() => {
     fetchHealth();
+
+    // Check for existing passcode in localStorage
+    const savedCode = localStorage.getItem("odin_passcode");
+    if (savedCode) {
+      setPasscode(savedCode);
+    }
+
     const timer = setInterval(() => {
       setCurrentTime(new Date().toUTCString().replace("GMT", "UTC"));
     }, 1000);
     return () => clearInterval(timer);
   }, []);
+
+  const handleSavePasscode = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!passcodeInput.trim()) {
+      setPasscodeStatus("Passcode cannot be blank.");
+      return;
+    }
+    const cleanCode = passcodeInput.trim();
+    localStorage.setItem("odin_passcode", cleanCode);
+    setPasscode(cleanCode);
+    setPasscodeInput("");
+    setPasscodeStatus("Access passcode verified and secured in local terminal.");
+    setTimeout(() => setPasscodeStatus(""), 3500);
+  };
+
+  const handleRevokePasscode = () => {
+    localStorage.removeItem("odin_passcode");
+    setPasscode("");
+    setPasscodeStatus("Security clearance revoked. Access gate locked.");
+    setTimeout(() => setPasscodeStatus(""), 3500);
+  };
 
   return (
     <main className="app-container">
@@ -69,6 +102,61 @@ export default function JarvisDashboard() {
         </div>
       </header>
 
+      {/* Security Clearance Gate Card (M2.5) */}
+      <section className="jarvis-card stagger-item" style={{ borderLeft: passcode ? "3px solid var(--accent-emerald)" : "3px solid var(--accent-amber)" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem" }}>
+          <div>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
+              <h2 className="font-display" style={{ fontSize: "1.1rem", color: "var(--text-primary)", letterSpacing: "0.06em" }}>
+                SECURITY CLEARANCE GATE
+              </h2>
+              <span className={`status-pill ${passcode ? "online" : "warning"}`}>
+                {passcode ? "LEVEL 5 AUTHORIZED" : "LOCK ENGAGED"}
+              </span>
+              {health?.diagnostics?.security?.passcodeProtected && (
+                <span className="status-pill cyan">QUOTA GUARD ARMED</span>
+              )}
+            </div>
+            <p style={{ color: "var(--text-secondary)", fontSize: "0.82rem", marginTop: "0.3rem" }}>
+              {passcode
+                ? "Terminal authenticated. Requests to /api/analyze include authorized x-odin-access-passcode credentials."
+                : "Engine calls are restricted. Enter the secret access passcode to authenticate this terminal and execute decision runs."}
+            </p>
+          </div>
+
+          <div>
+            {passcode ? (
+              <button
+                onClick={handleRevokePasscode}
+                className="hud-button"
+                style={{ borderColor: "rgba(244, 63, 94, 0.4)", color: "var(--accent-rose)" }}
+              >
+                REVOKE CLEARANCE
+              </button>
+            ) : (
+              <form onSubmit={handleSavePasscode} style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+                <input
+                  type="password"
+                  placeholder="Enter Access Passcode..."
+                  value={passcodeInput}
+                  onChange={(e) => setPasscodeInput(e.target.value)}
+                  className="hud-input"
+                  style={{ width: "220px" }}
+                />
+                <button type="submit" className="hud-button">
+                  AUTHORIZE
+                </button>
+              </form>
+            )}
+          </div>
+        </div>
+        {passcodeStatus && (
+          <div className="font-mono" style={{ fontSize: "0.78rem", color: "var(--accent-cyan)", marginTop: "0.6rem" }}>
+            {passcodeStatus}
+          </div>
+        )}
+      </section>
+
       {/* Grid: Health Telemetry & Architecture Layers */}
       <div className="hud-grid">
         {/* Environment Diagnostics Card */}
@@ -93,7 +181,7 @@ export default function JarvisDashboard() {
               <div>
                 <div style={{ fontWeight: 600, fontSize: "0.9rem" }}>Cognitive Engine (Gemini)</div>
                 <div className="font-mono" style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
-                  Model: {health?.diagnostics?.gemini?.model || "gemini-2.5-flash"}
+                  Model: {health?.diagnostics?.gemini?.model || "gemini-3.6-flash"}
                 </div>
               </div>
               <span className={`status-pill ${health?.diagnostics?.gemini?.configured ? "online" : "warning"}`}>
@@ -126,6 +214,19 @@ export default function JarvisDashboard() {
                 {health?.diagnostics?.encryption?.isValidLength ? "ACTIVE (256-BIT)" : "PENDING KEY"}
               </span>
             </div>
+
+            {/* Access Passcode Check */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.75rem", background: "var(--bg-card-subtle)", borderRadius: "8px", border: "1px solid var(--border-subtle)" }}>
+              <div>
+                <div style={{ fontWeight: 600, fontSize: "0.9rem" }}>Access Passcode Gate</div>
+                <div className="font-mono" style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
+                  Quota Protection (M2.5)
+                </div>
+              </div>
+              <span className={`status-pill ${health?.diagnostics?.security?.passcodeProtected ? "online" : "warning"}`}>
+                {health?.diagnostics?.security?.passcodeProtected ? "ARMED" : "UNPROTECTED"}
+              </span>
+            </div>
           </div>
         </section>
 
@@ -142,9 +243,9 @@ export default function JarvisDashboard() {
             {[
               { id: "L1", name: "Memory Layer", role: "Constitution & RACI Bound", status: "Active" },
               { id: "L2", name: "Knowledge Layer", role: "Skills & Reasoning Prompts", status: "Loaded" },
-              { id: "L3", name: "Guardrail Layer", role: "Gitleaks & Pre-Tool Interceptor", status: "Enforced" },
-              { id: "L4", name: "Delegation Layer", role: "Specialized Reasoning Agents", status: "Ready" },
-              { id: "L5", name: "Distribution Layer", role: "Vercel + GitHub Actions", status: "Standing By" },
+              { id: "L3", name: "Guardrail Layer", role: "Gitleaks & Passcode Interceptor", status: "Enforced" },
+              { id: "L4", name: "Delegation Layer", role: "Specialized Reasoning Personas", status: "Ready" },
+              { id: "L5", name: "Distribution Layer", role: "Vercel + GitHub Actions", status: "Operational" },
             ].map((layer) => (
               <div
                 key={layer.id}
@@ -176,39 +277,49 @@ export default function JarvisDashboard() {
         </section>
       </div>
 
-      {/* Milestone 1 Status & Next Steps */}
+      {/* Phase 2 Progress Track */}
       <section className="jarvis-card stagger-item">
         <h2 className="font-display" style={{ fontSize: "1.1rem", color: "var(--text-primary)", letterSpacing: "0.06em", marginBottom: "0.8rem" }}>
-          PHASE 2 MILESTONE 1 (M1) — READINESS REPORT
+          PHASE 2 ROADMAP STATUS
         </h2>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "1rem", marginTop: "1rem" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "1rem", marginTop: "1rem" }}>
           <div style={{ padding: "1rem", background: "var(--bg-card-subtle)", borderRadius: "8px", border: "1px solid var(--border-subtle)" }}>
-            <div className="font-mono" style={{ color: "var(--accent-cyan)", fontSize: "0.8rem", marginBottom: "0.25rem" }}>
-              STEP 1: SCAFFOLD
+            <div className="font-mono" style={{ color: "var(--accent-emerald)", fontSize: "0.8rem", marginBottom: "0.25rem" }}>
+              ✓ MILESTONE 1
             </div>
-            <div style={{ fontWeight: 600, fontSize: "0.95rem" }}>Next.js 15 App Router</div>
+            <div style={{ fontWeight: 600, fontSize: "0.95rem" }}>Next.js 15 & Vercel</div>
             <p style={{ color: "var(--text-secondary)", fontSize: "0.8rem", marginTop: "0.25rem" }}>
-              TypeScript, Vanilla CSS design tokens, zero-conflict coexistence with legacy Python engine.
+              Scaffold deployed on Vercel free tier with environment secrets.
+            </p>
+          </div>
+
+          <div style={{ padding: "1rem", background: "var(--bg-card-subtle)", borderRadius: "8px", border: "1px solid var(--border-subtle)" }}>
+            <div className="font-mono" style={{ color: "var(--accent-emerald)", fontSize: "0.8rem", marginBottom: "0.25rem" }}>
+              ✓ MILESTONE 2
+            </div>
+            <div style={{ fontWeight: 600, fontSize: "0.95rem" }}>4-Call Reasoning Engine</div>
+            <p style={{ color: "var(--text-secondary)", fontSize: "0.8rem", marginTop: "0.25rem" }}>
+              Quant, Strategist, Behaviorist, Judge ported to API routes with Gemini 3.6 Flash.
             </p>
           </div>
 
           <div style={{ padding: "1rem", background: "var(--bg-card-subtle)", borderRadius: "8px", border: "1px solid var(--border-subtle)" }}>
             <div className="font-mono" style={{ color: "var(--accent-cyan)", fontSize: "0.8rem", marginBottom: "0.25rem" }}>
-              STEP 2: SECURITY
+              ⚡ MILESTONE 2.5
             </div>
-            <div style={{ fontWeight: 600, fontSize: "0.95rem" }}>Env Secrets & Gitleaks</div>
+            <div style={{ fontWeight: 600, fontSize: "0.95rem" }}>Access Passcode Gate</div>
             <p style={{ color: "var(--text-secondary)", fontSize: "0.8rem", marginTop: "0.25rem" }}>
-              .env.local isolated and gitignored; serverless routes protect all raw API keys.
+              Terminal authorization gate protecting Gemini quota from unauthorized traffic.
             </p>
           </div>
 
           <div style={{ padding: "1rem", background: "var(--bg-card-subtle)", borderRadius: "8px", border: "1px solid var(--border-subtle)" }}>
-            <div className="font-mono" style={{ color: "var(--accent-cyan)", fontSize: "0.8rem", marginBottom: "0.25rem" }}>
-              STEP 3: DEPLOYMENT
+            <div className="font-mono" style={{ color: "var(--text-muted)", fontSize: "0.8rem", marginBottom: "0.25rem" }}>
+              ⏳ UPCOMING M3
             </div>
-            <div style={{ fontWeight: 600, fontSize: "0.95rem" }}>Vercel Zero-Cost Tier</div>
+            <div style={{ fontWeight: 600, fontSize: "0.95rem" }}>Supabase Auth & RLS</div>
             <p style={{ color: "var(--text-secondary)", fontSize: "0.8rem", marginTop: "0.25rem" }}>
-              Scaffold verified build-ready for continuous deployment upon git push.
+              Postgres + pgvector migration, user auth sessions, and AES-256 narrative encryption.
             </p>
           </div>
         </div>

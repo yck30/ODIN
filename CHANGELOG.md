@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Phase 2 Milestone 2.5 (M2.5) — Secret Access Passcode Gate & Quota Protection**:
+  - Implemented access control gate via `ODIN_ACCESS_PASSCODE` to safeguard Gemini API quotas on public Vercel deployments.
+  - Hardened `/api/analyze` to immediately block unauthorized requests and public crawlers with HTTP 401 before any model execution.
+  - Built JARVIS HUD Security Clearance widget (`app/page.tsx`) with browser credential retention (`localStorage`) and visual clearance levels.
+  - Updated Phase 2 roadmap in `BACKLOG.md` preparing for Supabase Auth and Row-Level Security (RLS) in Milestone 3.
 - **Phase 2 Milestone 2 (M2) — Cognitive Reasoning Engine Ported to Next.js**:
   - Ported the 4-persona sequential reasoning engine (The Quant, The Strategist, The Behaviorist, The Judge) to server-side Next.js using `@google/genai`.
   - Embedded verbatim Section 20 system prompts and strict JSON schema contracts (`lib/engine/prompts.ts`, `lib/engine/schemas.ts`, `lib/engine/types.ts`).

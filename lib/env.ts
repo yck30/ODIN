@@ -21,6 +21,9 @@ export interface SystemEnvDiagnostics {
     configured: boolean;
     isValidLength: boolean;
   };
+  security: {
+    passcodeProtected: boolean;
+  };
   nodeEnv: string;
   timestamp: string;
 }
@@ -34,6 +37,21 @@ export function isValidEncryptionKey(key?: string): boolean {
 }
 
 /**
+ * Verifies whether an incoming candidate access passcode matches the server-configured passkey.
+ * If ODIN_ACCESS_PASSCODE is not set on the server, it allows access (opt-in protection).
+ */
+export function verifyPasscode(candidate?: string | null): boolean {
+  const configuredPasscode = process.env.ODIN_ACCESS_PASSCODE?.trim();
+  if (!configuredPasscode) {
+    return true; // No passcode gate set on server
+  }
+  if (!candidate) {
+    return false;
+  }
+  return candidate.trim() === configuredPasscode;
+}
+
+/**
  * Returns safe, non-sensitive boolean diagnostics of the system's environment configuration.
  * Safe to expose to authenticated/diagnostic dashboard routes.
  */
@@ -44,6 +62,7 @@ export function getEnvDiagnostics(): SystemEnvDiagnostics {
   const supabaseAnon = (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY)?.trim();
   const supabaseService = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
   const encryptionKey = process.env.APP_ENCRYPTION_KEY?.trim();
+  const passcode = process.env.ODIN_ACCESS_PASSCODE?.trim();
 
   return {
     gemini: {
@@ -58,6 +77,9 @@ export function getEnvDiagnostics(): SystemEnvDiagnostics {
     encryption: {
       configured: Boolean(encryptionKey && !encryptionKey.includes("your-64-character")),
       isValidLength: isValidEncryptionKey(encryptionKey),
+    },
+    security: {
+      passcodeProtected: Boolean(passcode && !passcode.includes("your-secure-access-passcode")),
     },
     nodeEnv: process.env.NODE_ENV || "development",
     timestamp: new Date().toISOString(),

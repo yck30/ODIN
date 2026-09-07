@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { executeSequentialAnalysis } from "@/lib/engine/orchestrator";
+import { verifyPasscode } from "@/lib/env";
 import type { DecisionIntake } from "@/lib/engine/types";
 
 export const dynamic = "force-dynamic";
@@ -10,6 +11,7 @@ interface IntakeRequestBody {
   known_constraints?: string;
   raw_narrative?: string;
   stream?: boolean;
+  passcode?: string;
 }
 
 /**
@@ -52,19 +54,36 @@ function validateIntake(body: IntakeRequestBody): { valid: true; intake: Decisio
 }
 
 export async function POST(req: NextRequest) {
+  // 1. Quota & Access Gate: Verify Access Passcode
+  const candidatePasscode =
+    req.headers.get("x-odin-access-passcode") ||
+    req.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ||
+    req.cookies.get("odin_passcode")?.value ||
+    req.nextUrl.searchParams.get("passcode");
+
+  let body: IntakeRequestBody = {};
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON request body." }, { status: 400 });
+  }
+
+  const effectivePasscode = candidatePasscode || body.passcode;
+  if (!verifyPasscode(effectivePasscode)) {
+    return NextResponse.json(
+      {
+        error: "Access Denied: Invalid or missing O.D.I.N. Access Passcode. Unauthorized traffic is prohibited from invoking the reasoning engine.",
+      },
+      { status: 401 }
+    );
+  }
+
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     return NextResponse.json(
       { error: "Server Configuration Error: GEMINI_API_KEY is not configured on the host." },
       { status: 500 }
     );
-  }
-
-  let body: IntakeRequestBody;
-  try {
-    body = await req.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON request body." }, { status: 400 });
   }
 
   const validation = validateIntake(body);

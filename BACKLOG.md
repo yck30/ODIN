@@ -17,7 +17,8 @@ This backlog tracks the development milestones for Phase 2 (JARVIS Interface & K
 ### Must-Have
 - [x] **M1:** Next.js scaffold deployed on Vercel free tier; environment variables (Gemini + Supabase keys) configured; gitleaks pre-commit hook carried over.
 - [x] **M2:** Four-call sequential engine ported to Next.js API routes (Server-side only); Section 20 prompts and schemas copied verbatim; Gemini 3.5 Flash pinned.
-- [ ] **M3:** Supabase schema (Postgres + pgvector) migrated with RLS enabled; app-layer encryption on `raw_narrative` implemented.
+- [x] **M2.5 (Access Control & Quota Protection):** Secret Access Passcode Gate implemented (`ODIN_ACCESS_PASSCODE`), HUD security clearance card wired, `/api/analyze` protected against unauthorized public quota drain (HTTP 401 on mismatch).
+- [ ] **M3:** Supabase Auth integration (restricted single-user/whitelist) paired with Supabase schema (Postgres + pgvector) migration; Row-Level Security (RLS) policies enforced via `auth.uid()`; app-layer encryption on `raw_narrative` implemented.
 - [ ] **M4:** Web Speech API voice I/O wired to the intake flow and report readback.
 - [ ] **M5:** JARVIS-aesthetic UI build (case-history list, detail views, progressive-disclosure status strings).
 - [ ] **M5.5 (v1.1):** Cross-session recall built (embedding-then-similarity-query); Judge prompt amended; JSON export endpoint implemented.

@@ -248,6 +248,31 @@ body::after {
   gap: 1.5rem;
 }
 
+/* Security Clearance Passcode Gate Inputs */
+.hud-input {
+  width: 100%;
+  padding: 0.65rem 1rem;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  background: rgba(13, 21, 45, 0.8);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  outline: none;
+  transition: border-color var(--duration-fast) var(--ease-out-snappy),
+              box-shadow var(--duration-fast) var(--ease-out-snappy);
+}
+
+.hud-input:focus {
+  border-color: var(--accent-cyan);
+  box-shadow: var(--glow-cyan-sm);
+}
+
+.hud-input::placeholder {
+  color: var(--text-muted);
+}
+
+
 /* Staggered entrance */
 .stagger-item {
   opacity: 0;
