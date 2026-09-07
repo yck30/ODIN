@@ -272,6 +272,70 @@ body::after {
   color: var(--text-muted);
 }
 
+/* Form Textareas */
+.hud-textarea {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  background: rgba(13, 21, 45, 0.8);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  outline: none;
+  resize: vertical;
+  min-height: 90px;
+  line-height: 1.5;
+  transition: border-color var(--duration-fast) var(--ease-out-snappy),
+              box-shadow var(--duration-fast) var(--ease-out-snappy);
+}
+
+.hud-textarea:focus {
+  border-color: var(--accent-cyan);
+  box-shadow: var(--glow-cyan-sm);
+}
+
+.hud-textarea::placeholder {
+  color: var(--text-muted);
+}
+
+/* Tabs Navigation */
+.hud-tabs {
+  display: flex;
+  gap: 0.5rem;
+  border-bottom: 1px solid var(--border-subtle);
+  padding-bottom: 0.75rem;
+  margin-bottom: 1.5rem;
+  overflow-x: auto;
+}
+
+.hud-tab {
+  padding: 0.5rem 1rem;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all var(--duration-fast) var(--ease-out-snappy);
+}
+
+.hud-tab:hover {
+  color: var(--accent-cyan);
+  background: rgba(0, 240, 255, 0.05);
+}
+
+.hud-tab.active {
+  color: var(--accent-cyan);
+  background: rgba(0, 240, 255, 0.12);
+  border-color: var(--border-medium);
+  box-shadow: var(--glow-cyan-sm);
+}
+
+
 
 /* Staggered entrance */
 .stagger-item {

@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import MermaidViewer from "@/components/MermaidViewer";
 import type { SystemEnvDiagnostics } from "@/lib/env";
+import type { FullAnalysisResult } from "@/lib/engine/types";
 
 interface HealthResponse {
   status: "operational" | "degraded" | "error";
@@ -11,9 +13,15 @@ interface HealthResponse {
   diagnostics: SystemEnvDiagnostics;
 }
 
+const SAMPLE_DILEMMA = {
+  objectives: "Determine whether to pivot go-to-market from enterprise high-touch sales to self-serve Product-Led Growth (PLG).",
+  constraints: "6 months of runway remaining ($300k cash). Team: 4 engineers, 1 sales lead. Enterprise sales cycle averages 5 months.",
+  narrative: "We currently have 2 enterprise pilot contracts ($60k ARR each) in verbal agreement, but one prospect's procurement team has been unresponsive for 14 days. Meanwhile, our organic self-serve product is getting 120 signups/week with no paid acquisition, but free-to-paid conversion on the $39/mo tier is only 1.1%. The engineering team is pushing to scrap enterprise and focus 100% on PLG, while our lead investor insists on high-ACV enterprise accounts. We cannot afford to miss payroll in month 7.",
+};
+
 export default function JarvisDashboard() {
   const [health, setHealth] = useState<HealthResponse | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [loadingHealth, setLoadingHealth] = useState<boolean>(true);
   const [currentTime, setCurrentTime] = useState<string>("");
 
   // Passcode Security Clearance State
@@ -21,8 +29,20 @@ export default function JarvisDashboard() {
   const [passcodeInput, setPasscodeInput] = useState<string>("");
   const [passcodeStatus, setPasscodeStatus] = useState<string>("");
 
+  // Decision Intake Form State
+  const [coreObjectives, setCoreObjectives] = useState<string>("");
+  const [knownConstraints, setKnownConstraints] = useState<string>("");
+  const [rawNarrative, setRawNarrative] = useState<string>("");
+
+  // Analysis Execution State
+  const [analyzing, setAnalyzing] = useState<boolean>(false);
+  const [analysisStage, setAnalysisStage] = useState<string>("");
+  const [analysisError, setAnalysisError] = useState<string>("");
+  const [analysisResult, setAnalysisResult] = useState<FullAnalysisResult | null>(null);
+  const [activeTab, setActiveTab] = useState<"judge" | "quant" | "strategist" | "behaviorist">("judge");
+
   const fetchHealth = async () => {
-    setLoading(true);
+    setLoadingHealth(true);
     try {
       const res = await fetch("/api/health");
       const data: HealthResponse = await res.json();
@@ -30,14 +50,13 @@ export default function JarvisDashboard() {
     } catch {
       setHealth(null);
     } finally {
-      setLoading(false);
+      setLoadingHealth(false);
     }
   };
 
   useEffect(() => {
     fetchHealth();
 
-    // Check for existing passcode in localStorage
     const savedCode = localStorage.getItem("odin_passcode");
     if (savedCode) {
       setPasscode(savedCode);
@@ -68,6 +87,100 @@ export default function JarvisDashboard() {
     setPasscode("");
     setPasscodeStatus("Security clearance revoked. Access gate locked.");
     setTimeout(() => setPasscodeStatus(""), 3500);
+  };
+
+  const handleLoadSample = () => {
+    setCoreObjectives(SAMPLE_DILEMMA.objectives);
+    setKnownConstraints(SAMPLE_DILEMMA.constraints);
+    setRawNarrative(SAMPLE_DILEMMA.narrative);
+  };
+
+  const handleClearForm = () => {
+    setCoreObjectives("");
+    setKnownConstraints("");
+    setRawNarrative("");
+    setAnalysisResult(null);
+    setAnalysisError("");
+  };
+
+  const handleExecuteAnalysis = async () => {
+    setAnalysisError("");
+    setAnalysisResult(null);
+    setAnalyzing(true);
+    setAnalysisStage("Initializing cognitive personas...");
+
+    try {
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+        Accept: "text/event-stream",
+      };
+      if (passcode) {
+        headers["x-odin-access-passcode"] = passcode;
+      }
+
+      const response = await fetch("/api/analyze?stream=true", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          core_objectives: coreObjectives,
+          known_constraints: knownConstraints,
+          raw_narrative: rawNarrative,
+          stream: true,
+          passcode: passcode || undefined,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Server responded with status ${response.status}`);
+      }
+
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error("Unable to open streaming response reader.");
+      }
+
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+
+        let currentEvent = "";
+        for (const line of lines) {
+          if (line.startsWith("event: ")) {
+            currentEvent = line.replace("event: ", "").trim();
+          } else if (line.startsWith("data: ")) {
+            const dataStr = line.replace("data: ", "").trim();
+            try {
+              const parsed = JSON.parse(dataStr);
+              if (currentEvent === "progress") {
+                setAnalysisStage(`[Stage ${parsed.step}/${parsed.totalSteps}] ${parsed.message}`);
+              } else if (currentEvent === "complete") {
+                setAnalysisResult(parsed);
+                setActiveTab("judge");
+                setAnalysisStage("Cognitive synthesis complete.");
+              } else if (currentEvent === "error") {
+                throw new Error(parsed.message || "Execution error in engine.");
+              }
+            } catch (err: unknown) {
+              if (currentEvent === "error") {
+                throw err;
+              }
+            }
+          }
+        }
+      }
+    } catch (err: unknown) {
+      setAnalysisError(err instanceof Error ? err.message : "Cognitive execution encountered an error.");
+    } finally {
+      setAnalyzing(false);
+    }
   };
 
   return (
@@ -107,11 +220,11 @@ export default function JarvisDashboard() {
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem" }}>
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
-              <h2 className="font-display" style={{ fontSize: "1.1rem", color: "var(--text-primary)", letterSpacing: "0.06em" }}>
+              <h2 className="font-display" style={{ fontSize: "1.05rem", color: "var(--text-primary)", letterSpacing: "0.06em" }}>
                 SECURITY CLEARANCE GATE
               </h2>
               <span className={`status-pill ${passcode ? "online" : "warning"}`}>
-                {passcode ? "LEVEL 5 AUTHORIZED" : "LOCK ENGAGED"}
+                {passcode ? "LEVEL 5 AUTHORIZED" : "PASSCODE REQUIRED"}
               </span>
               {health?.diagnostics?.security?.passcodeProtected && (
                 <span className="status-pill cyan">QUOTA GUARD ARMED</span>
@@ -119,8 +232,8 @@ export default function JarvisDashboard() {
             </div>
             <p style={{ color: "var(--text-secondary)", fontSize: "0.82rem", marginTop: "0.3rem" }}>
               {passcode
-                ? "Terminal authenticated. Requests to /api/analyze include authorized x-odin-access-passcode credentials."
-                : "Engine calls are restricted. Enter the secret access passcode to authenticate this terminal and execute decision runs."}
+                ? "Terminal authenticated. Requests to /api/analyze automatically attach authorized security credentials."
+                : "Engine calls are gated against unauthorized public bot traffic. Enter the secret access passcode to unlock the terminal."}
             </p>
           </div>
 
@@ -129,7 +242,7 @@ export default function JarvisDashboard() {
               <button
                 onClick={handleRevokePasscode}
                 className="hud-button"
-                style={{ borderColor: "rgba(244, 63, 94, 0.4)", color: "var(--accent-rose)" }}
+                style={{ borderColor: "rgba(244, 63, 94, 0.4)", color: "var(--accent-rose)", fontSize: "0.75rem" }}
               >
                 REVOKE CLEARANCE
               </button>
@@ -143,7 +256,7 @@ export default function JarvisDashboard() {
                   className="hud-input"
                   style={{ width: "220px" }}
                 />
-                <button type="submit" className="hud-button">
+                <button type="submit" className="hud-button" style={{ fontSize: "0.75rem" }}>
                   AUTHORIZE
                 </button>
               </form>
@@ -157,6 +270,384 @@ export default function JarvisDashboard() {
         )}
       </section>
 
+      {/* Decision Intake Console */}
+      <section className="jarvis-card stagger-item">
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.2rem", flexWrap: "wrap", gap: "0.5rem" }}>
+          <div>
+            <h2 className="font-display" style={{ fontSize: "1.2rem", color: "var(--accent-cyan)", letterSpacing: "0.06em" }}>
+              DECISION INTAKE CONSOLE
+            </h2>
+            <p style={{ color: "var(--text-secondary)", fontSize: "0.82rem", marginTop: "0.2rem" }}>
+              Submit high-stakes dilemmas for 4-persona mathematical, strategic, and behavioral arbitration.
+            </p>
+          </div>
+          <div style={{ display: "flex", gap: "0.5rem" }}>
+            <button
+              onClick={handleLoadSample}
+              disabled={analyzing}
+              className="hud-button"
+              style={{ fontSize: "0.75rem", padding: "0.4rem 0.8rem" }}
+            >
+              LOAD SAMPLE DILEMMA
+            </button>
+            <button
+              onClick={handleClearForm}
+              disabled={analyzing}
+              className="hud-button"
+              style={{ fontSize: "0.75rem", padding: "0.4rem 0.8rem", color: "var(--text-muted)", borderColor: "var(--border-subtle)" }}
+            >
+              CLEAR
+            </button>
+          </div>
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+          <div>
+            <label className="font-mono" style={{ display: "block", fontSize: "0.78rem", color: "var(--accent-cyan)", marginBottom: "0.4rem" }}>
+              CORE OBJECTIVES (PRIMARY OUTCOMES)
+            </label>
+            <textarea
+              className="hud-textarea"
+              placeholder="e.g. Determine whether to pivot GTM strategy from enterprise direct sales to self-serve PLG..."
+              value={coreObjectives}
+              onChange={(e) => setCoreObjectives(e.target.value)}
+              disabled={analyzing}
+              rows={2}
+            />
+          </div>
+
+          <div>
+            <label className="font-mono" style={{ display: "block", fontSize: "0.78rem", color: "var(--accent-blue)", marginBottom: "0.4rem" }}>
+              KNOWN CONSTRAINTS (RUNWAY, CAPITAL, TIMELINE, TEAMS)
+            </label>
+            <textarea
+              className="hud-textarea"
+              placeholder="e.g. 6 months of cash remaining ($300k). 4 engineers, 1 sales lead. Must achieve cash flow break-even before month 7..."
+              value={knownConstraints}
+              onChange={(e) => setKnownConstraints(e.target.value)}
+              disabled={analyzing}
+              rows={2}
+            />
+          </div>
+
+          <div>
+            <label className="font-mono" style={{ display: "block", fontSize: "0.78rem", color: "var(--accent-indigo)", marginBottom: "0.4rem" }}>
+              RAW NARRATIVE (FULL SITUATIONAL CONTEXT & CONFLICTING SIGNALS)
+            </label>
+            <textarea
+              className="hud-textarea"
+              placeholder="Describe the full backstory, conflicting internal opinions, external risks, procurement delays, customer signals, and dilemma..."
+              value={rawNarrative}
+              onChange={(e) => setRawNarrative(e.target.value)}
+              disabled={analyzing}
+              rows={4}
+            />
+          </div>
+
+          {analysisError && (
+            <div style={{ padding: "0.8rem 1rem", background: "rgba(244, 63, 94, 0.12)", border: "1px solid var(--accent-rose)", borderRadius: "8px", color: "#fda4af", fontSize: "0.85rem" }}>
+              <strong>Execution Error:</strong> {analysisError}
+            </div>
+          )}
+
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "0.5rem", flexWrap: "wrap", gap: "1rem" }}>
+            <div className="font-mono" style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}>
+              Section 20 Protocol: Quant → Strategist → Behaviorist → Judge (Gemini 3.6 Flash)
+            </div>
+            <button
+              onClick={handleExecuteAnalysis}
+              disabled={analyzing || !coreObjectives.trim() || !knownConstraints.trim() || !rawNarrative.trim()}
+              className="hud-button"
+              style={{ padding: "0.8rem 1.75rem", fontSize: "0.9rem", fontWeight: 700 }}
+            >
+              {analyzing ? "COGNITIVE SYNTHESIS IN PROGRESS..." : "EXECUTE DECISION ANALYSIS"}
+            </button>
+          </div>
+        </div>
+
+        {/* Live Streaming Stage Indicator */}
+        {analyzing && (
+          <div style={{ marginTop: "1.5rem", padding: "1rem", background: "rgba(0, 240, 255, 0.06)", border: "1px solid var(--accent-cyan)", borderRadius: "8px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+              <span className="pulse-dot" />
+              <span className="font-mono" style={{ color: "var(--accent-cyan)", fontSize: "0.85rem" }}>
+                {analysisStage}
+              </span>
+            </div>
+            <div style={{ marginTop: "0.75rem", height: "3px", background: "rgba(255,255,255,0.1)", borderRadius: "2px", overflow: "hidden" }}>
+              <div
+                style={{
+                  height: "100%",
+                  width: analysisStage.includes("Stage 1")
+                    ? "25%"
+                    : analysisStage.includes("Stage 2")
+                    ? "50%"
+                    : analysisStage.includes("Stage 3")
+                    ? "75%"
+                    : analysisStage.includes("Stage 4")
+                    ? "95%"
+                    : "15%",
+                  background: "var(--accent-cyan)",
+                  boxShadow: "var(--glow-cyan-sm)",
+                  transition: "width 0.4s ease-out",
+                }}
+              />
+            </div>
+          </div>
+        )}
+      </section>
+
+      {/* Analysis Deliverables Panel (Rendered on Complete) */}
+      {analysisResult && (
+        <section className="jarvis-card stagger-item">
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem", marginBottom: "1.5rem" }}>
+            <div>
+              <h2 className="font-display" style={{ fontSize: "1.3rem", color: "var(--accent-cyan)", letterSpacing: "0.06em" }}>
+                COGNITIVE SYNTHESIS DELIVERABLES
+              </h2>
+              <div className="font-mono" style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginTop: "0.2rem" }}>
+                Computed in {(analysisResult.metadata.totalDurationMs / 1000).toFixed(1)}s via {analysisResult.metadata.model}
+              </div>
+            </div>
+
+            {/* Persona Tabs */}
+            <div className="hud-tabs" style={{ marginBottom: 0, borderBottom: "none", paddingBottom: 0 }}>
+              <button
+                onClick={() => setActiveTab("judge")}
+                className={`hud-tab ${activeTab === "judge" ? "active" : ""}`}
+              >
+                THE JUDGE (ARBITRATION)
+              </button>
+              <button
+                onClick={() => setActiveTab("quant")}
+                className={`hud-tab ${activeTab === "quant" ? "active" : ""}`}
+              >
+                THE QUANT
+              </button>
+              <button
+                onClick={() => setActiveTab("strategist")}
+                className={`hud-tab ${activeTab === "strategist" ? "active" : ""}`}
+              >
+                THE STRATEGIST
+              </button>
+              <button
+                onClick={() => setActiveTab("behaviorist")}
+                className={`hud-tab ${activeTab === "behaviorist" ? "active" : ""}`}
+              >
+                THE BEHAVIORIST
+              </button>
+            </div>
+          </div>
+
+          {/* TAB 1: THE JUDGE */}
+          {activeTab === "judge" && (
+            <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+              {/* Recommended Path Banner */}
+              <div style={{ padding: "1.25rem", background: "rgba(0, 240, 255, 0.08)", border: "1px solid var(--accent-cyan)", borderRadius: "8px" }}>
+                <div className="font-mono" style={{ fontSize: "0.78rem", color: "var(--accent-cyan)", marginBottom: "0.3rem" }}>
+                  DEFINITIVE ARBITRATION VERDICT:
+                </div>
+                <div style={{ fontSize: "1.05rem", fontWeight: 700, color: "var(--text-primary)", lineHeight: 1.5 }}>
+                  &quot;{analysisResult.judge.recommended_path}&quot;
+                </div>
+              </div>
+
+              {/* Sequenced Next 3 Actions */}
+              <div>
+                <h3 className="font-display" style={{ fontSize: "1rem", color: "var(--accent-blue)", marginBottom: "0.75rem" }}>
+                  SEQUENCED NEXT 3 ACTIONS (FIRST PRINCIPLES)
+                </h3>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "1rem" }}>
+                  {analysisResult.judge.next_3_actions.map((act, index) => (
+                    <div
+                      key={index}
+                      style={{
+                        padding: "1rem",
+                        background: "var(--bg-card-subtle)",
+                        borderRadius: "8px",
+                        border: "1px solid var(--border-subtle)",
+                        position: "relative",
+                      }}
+                    >
+                      <div className="font-mono" style={{ fontSize: "1.2rem", fontWeight: 800, color: "var(--accent-cyan)", marginBottom: "0.4rem" }}>
+                        0{index + 1}
+                      </div>
+                      <p style={{ fontSize: "0.88rem", lineHeight: 1.5, color: "var(--text-primary)" }}>{act}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Flowchart Diagram */}
+              {analysisResult.judge.mermaid_diagram && (
+                <div>
+                  <h3 className="font-display" style={{ fontSize: "1rem", color: "var(--accent-indigo)", marginBottom: "0.75rem" }}>
+                    DECISION FLOWCHART & BRANCH POINTS
+                  </h3>
+                  <MermaidViewer chart={analysisResult.judge.mermaid_diagram} />
+                </div>
+              )}
+
+              {/* Tension Points & Full Synthesis */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "1.2rem" }}>
+                <div style={{ padding: "1rem", background: "var(--bg-card-subtle)", borderRadius: "8px", border: "1px solid var(--border-subtle)" }}>
+                  <h4 className="font-mono" style={{ fontSize: "0.8rem", color: "var(--accent-amber)", marginBottom: "0.5rem" }}>
+                    IDENTIFIED TENSION POINTS
+                  </h4>
+                  <ul style={{ paddingLeft: "1.2rem", fontSize: "0.85rem", color: "var(--text-secondary)", lineHeight: 1.6 }}>
+                    {analysisResult.judge.tension_points.map((tp, i) => (
+                      <li key={i}>{tp}</li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div style={{ padding: "1rem", background: "var(--bg-card-subtle)", borderRadius: "8px", border: "1px solid var(--border-subtle)" }}>
+                  <h4 className="font-mono" style={{ fontSize: "0.8rem", color: "var(--accent-cyan)", marginBottom: "0.5rem" }}>
+                    SYNTHESIS NARRATIVE
+                  </h4>
+                  <p style={{ fontSize: "0.85rem", color: "var(--text-secondary)", lineHeight: 1.6 }}>
+                    {analysisResult.judge.synthesis}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 2: THE QUANT */}
+          {activeTab === "quant" && (
+            <div style={{ display: "flex", flexDirection: "column", gap: "1.2rem" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div>
+                  <h3 style={{ fontSize: "1.05rem", fontWeight: 700 }}>Operations Research & Expected Value</h3>
+                  <p style={{ color: "var(--text-secondary)", fontSize: "0.85rem" }}>{analysisResult.quant.summary}</p>
+                </div>
+                <span className="status-pill cyan">Confidence: {analysisResult.quant.confidence}</span>
+              </div>
+
+              <div style={{ padding: "1rem", background: "var(--bg-card-subtle)", borderRadius: "8px", border: "1px solid var(--border-subtle)" }}>
+                <h4 className="font-mono" style={{ fontSize: "0.8rem", color: "var(--accent-cyan)", marginBottom: "0.75rem" }}>
+                  IDENTIFIED DECISION PATHS & PROBABILITIES
+                </h4>
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                  {analysisResult.quant.paths.map((p, i) => (
+                    <div key={i} style={{ padding: "0.75rem", background: "rgba(0,0,0,0.3)", borderRadius: "6px", border: "1px solid var(--border-subtle)" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.3rem" }}>
+                        <span style={{ fontWeight: 600, fontSize: "0.9rem" }}>{p.name}</span>
+                        <span className="font-mono" style={{ color: "var(--accent-cyan)", fontSize: "0.8rem" }}>
+                          {p.probability !== null ? `P: ${(p.probability * 100).toFixed(0)}%` : "Qualitative EV"}
+                        </span>
+                      </div>
+                      <p style={{ fontSize: "0.82rem", color: "var(--text-secondary)" }}>{p.expected_value_notes}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div style={{ padding: "1rem", background: "var(--bg-card-subtle)", borderRadius: "8px", border: "1px solid var(--border-subtle)" }}>
+                <h4 className="font-mono" style={{ fontSize: "0.8rem", color: "var(--accent-blue)", marginBottom: "0.5rem" }}>
+                  DETAILED QUANTITATIVE REASONING
+                </h4>
+                <p style={{ fontSize: "0.85rem", color: "var(--text-secondary)", whiteSpace: "pre-line", lineHeight: 1.6 }}>
+                  {analysisResult.quant.reasoning}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 3: THE STRATEGIST */}
+          {activeTab === "strategist" && (
+            <div style={{ display: "flex", flexDirection: "column", gap: "1.2rem" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div>
+                  <h3 style={{ fontSize: "1.05rem", fontWeight: 700 }}>Game Theory & Reversibility Ranking</h3>
+                  <p style={{ color: "var(--text-secondary)", fontSize: "0.85rem" }}>{analysisResult.strategist.summary}</p>
+                </div>
+                <span className={`status-pill ${analysisResult.strategist.domain_framing === "adversarial" ? "warning" : "online"}`}>
+                  Domain: {analysisResult.strategist.domain_framing}
+                </span>
+              </div>
+
+              <div style={{ padding: "1rem", background: "var(--bg-card-subtle)", borderRadius: "8px", border: "1px solid var(--border-subtle)" }}>
+                <h4 className="font-mono" style={{ fontSize: "0.8rem", color: "var(--accent-cyan)", marginBottom: "0.75rem" }}>
+                  STRATEGIC REVERSIBILITY RANKING (ORDERED BY RISK)
+                </h4>
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                  {analysisResult.strategist.reversibility_ranking.map((m, i) => (
+                    <div key={i} style={{ padding: "0.75rem", background: "rgba(0,0,0,0.3)", borderRadius: "6px", border: "1px solid var(--border-subtle)" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.3rem" }}>
+                        <span style={{ fontWeight: 600, fontSize: "0.9rem" }}>{m.move}</span>
+                        <span
+                          className={`status-pill ${
+                            m.reversibility === "high" ? "online" : m.reversibility === "medium" ? "warning" : "cyan"
+                          }`}
+                        >
+                          Reversibility: {m.reversibility}
+                        </span>
+                      </div>
+                      <p style={{ fontSize: "0.82rem", color: "var(--text-secondary)" }}>{m.notes}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div style={{ padding: "1rem", background: "var(--bg-card-subtle)", borderRadius: "8px", border: "1px solid var(--border-subtle)" }}>
+                <h4 className="font-mono" style={{ fontSize: "0.8rem", color: "var(--accent-blue)", marginBottom: "0.5rem" }}>
+                  STRATEGIC REASONING
+                </h4>
+                <p style={{ fontSize: "0.85rem", color: "var(--text-secondary)", whiteSpace: "pre-line", lineHeight: 1.6 }}>
+                  {analysisResult.strategist.reasoning}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 4: THE BEHAVIORIST */}
+          {activeTab === "behaviorist" && (
+            <div style={{ display: "flex", flexDirection: "column", gap: "1.2rem" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div>
+                  <h3 style={{ fontSize: "1.05rem", fontWeight: 700 }}>Cognitive Bias Audit & Blind Spots</h3>
+                  <p style={{ color: "var(--text-secondary)", fontSize: "0.85rem" }}>{analysisResult.behaviorist.summary}</p>
+                </div>
+                <span className="status-pill cyan">Confidence: {analysisResult.behaviorist.confidence}</span>
+              </div>
+
+              <div style={{ padding: "1rem", background: "var(--bg-card-subtle)", borderRadius: "8px", border: "1px solid var(--border-subtle)" }}>
+                <h4 className="font-mono" style={{ fontSize: "0.8rem", color: "var(--accent-cyan)", marginBottom: "0.75rem" }}>
+                  COGNITIVE BIASES AUDITED
+                </h4>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "0.75rem" }}>
+                  {analysisResult.behaviorist.biases_detected.map((b, i) => (
+                    <div key={i} style={{ padding: "0.75rem", background: "rgba(0,0,0,0.3)", borderRadius: "6px", border: "1px solid var(--border-subtle)" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.3rem" }}>
+                        <span className="font-mono" style={{ fontWeight: 600, fontSize: "0.85rem", color: "var(--accent-cyan)" }}>
+                          {b.bias}
+                        </span>
+                        <span className={`status-pill ${b.present ? "warning" : "online"}`}>
+                          {b.present ? "DETECTED" : "RULED OUT"}
+                        </span>
+                      </div>
+                      <p style={{ fontSize: "0.8rem", color: "var(--text-secondary)", fontStyle: "italic" }}>
+                        &quot;{b.evidence}&quot;
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div style={{ padding: "1rem", background: "var(--bg-card-subtle)", borderRadius: "8px", border: "1px solid var(--border-subtle)" }}>
+                <h4 className="font-mono" style={{ fontSize: "0.8rem", color: "var(--accent-blue)", marginBottom: "0.5rem" }}>
+                  BEHAVIORAL AUDIT
+                </h4>
+                <p style={{ fontSize: "0.85rem", color: "var(--text-secondary)", whiteSpace: "pre-line", lineHeight: 1.6 }}>
+                  {analysisResult.behaviorist.reasoning}
+                </p>
+              </div>
+            </div>
+          )}
+        </section>
+      )}
+
       {/* Grid: Health Telemetry & Architecture Layers */}
       <div className="hud-grid">
         {/* Environment Diagnostics Card */}
@@ -167,11 +658,11 @@ export default function JarvisDashboard() {
             </h2>
             <button
               onClick={fetchHealth}
-              disabled={loading}
+              disabled={loadingHealth}
               className="hud-button"
               style={{ padding: "0.4rem 0.8rem", fontSize: "0.75rem" }}
             >
-              {loading ? "PROBING..." : "RE-PROBE"}
+              {loadingHealth ? "PROBING..." : "RE-PROBE"}
             </button>
           </div>
 
@@ -276,54 +767,6 @@ export default function JarvisDashboard() {
           </div>
         </section>
       </div>
-
-      {/* Phase 2 Progress Track */}
-      <section className="jarvis-card stagger-item">
-        <h2 className="font-display" style={{ fontSize: "1.1rem", color: "var(--text-primary)", letterSpacing: "0.06em", marginBottom: "0.8rem" }}>
-          PHASE 2 ROADMAP STATUS
-        </h2>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "1rem", marginTop: "1rem" }}>
-          <div style={{ padding: "1rem", background: "var(--bg-card-subtle)", borderRadius: "8px", border: "1px solid var(--border-subtle)" }}>
-            <div className="font-mono" style={{ color: "var(--accent-emerald)", fontSize: "0.8rem", marginBottom: "0.25rem" }}>
-              ✓ MILESTONE 1
-            </div>
-            <div style={{ fontWeight: 600, fontSize: "0.95rem" }}>Next.js 15 & Vercel</div>
-            <p style={{ color: "var(--text-secondary)", fontSize: "0.8rem", marginTop: "0.25rem" }}>
-              Scaffold deployed on Vercel free tier with environment secrets.
-            </p>
-          </div>
-
-          <div style={{ padding: "1rem", background: "var(--bg-card-subtle)", borderRadius: "8px", border: "1px solid var(--border-subtle)" }}>
-            <div className="font-mono" style={{ color: "var(--accent-emerald)", fontSize: "0.8rem", marginBottom: "0.25rem" }}>
-              ✓ MILESTONE 2
-            </div>
-            <div style={{ fontWeight: 600, fontSize: "0.95rem" }}>4-Call Reasoning Engine</div>
-            <p style={{ color: "var(--text-secondary)", fontSize: "0.8rem", marginTop: "0.25rem" }}>
-              Quant, Strategist, Behaviorist, Judge ported to API routes with Gemini 3.6 Flash.
-            </p>
-          </div>
-
-          <div style={{ padding: "1rem", background: "var(--bg-card-subtle)", borderRadius: "8px", border: "1px solid var(--border-subtle)" }}>
-            <div className="font-mono" style={{ color: "var(--accent-cyan)", fontSize: "0.8rem", marginBottom: "0.25rem" }}>
-              ⚡ MILESTONE 2.5
-            </div>
-            <div style={{ fontWeight: 600, fontSize: "0.95rem" }}>Access Passcode Gate</div>
-            <p style={{ color: "var(--text-secondary)", fontSize: "0.8rem", marginTop: "0.25rem" }}>
-              Terminal authorization gate protecting Gemini quota from unauthorized traffic.
-            </p>
-          </div>
-
-          <div style={{ padding: "1rem", background: "var(--bg-card-subtle)", borderRadius: "8px", border: "1px solid var(--border-subtle)" }}>
-            <div className="font-mono" style={{ color: "var(--text-muted)", fontSize: "0.8rem", marginBottom: "0.25rem" }}>
-              ⏳ UPCOMING M3
-            </div>
-            <div style={{ fontWeight: 600, fontSize: "0.95rem" }}>Supabase Auth & RLS</div>
-            <p style={{ color: "var(--text-secondary)", fontSize: "0.8rem", marginTop: "0.25rem" }}>
-              Postgres + pgvector migration, user auth sessions, and AES-256 narrative encryption.
-            </p>
-          </div>
-        </div>
-      </section>
     </main>
   );
 }
