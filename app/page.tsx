@@ -28,6 +28,8 @@ export default function JarvisDashboard() {
   const [passcode, setPasscode] = useState<string>("");
   const [passcodeInput, setPasscodeInput] = useState<string>("");
   const [passcodeStatus, setPasscodeStatus] = useState<string>("");
+  const [showPasscode, setShowPasscode] = useState<boolean>(false);
+  const [verifyingPasscode, setVerifyingPasscode] = useState<boolean>(false);
 
   // Decision Intake Form State
   const [coreObjectives, setCoreObjectives] = useState<string>("");
@@ -57,9 +59,28 @@ export default function JarvisDashboard() {
   useEffect(() => {
     fetchHealth();
 
+    // Verify stored passcode against server
     const savedCode = localStorage.getItem("odin_passcode");
     if (savedCode) {
-      setPasscode(savedCode);
+      fetch("/api/auth/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ passcode: savedCode }),
+      })
+        .then((res) => {
+          if (res.ok) {
+            setPasscode(savedCode);
+          } else {
+            localStorage.removeItem("odin_passcode");
+            setPasscode("");
+            setPasscodeStatus("Stored passcode was invalid and has been purged.");
+            setTimeout(() => setPasscodeStatus(""), 4000);
+          }
+        })
+        .catch(() => {
+          // If server offline, keep local state
+          setPasscode(savedCode);
+        });
     }
 
     const timer = setInterval(() => {
@@ -68,18 +89,40 @@ export default function JarvisDashboard() {
     return () => clearInterval(timer);
   }, []);
 
-  const handleSavePasscode = (e: React.FormEvent) => {
+  const handleSavePasscode = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!passcodeInput.trim()) {
+    const cleanCode = passcodeInput.trim();
+    if (!cleanCode) {
       setPasscodeStatus("Passcode cannot be blank.");
       return;
     }
-    const cleanCode = passcodeInput.trim();
-    localStorage.setItem("odin_passcode", cleanCode);
-    setPasscode(cleanCode);
-    setPasscodeInput("");
-    setPasscodeStatus("Access passcode verified and secured in local terminal.");
-    setTimeout(() => setPasscodeStatus(""), 3500);
+
+    setVerifyingPasscode(true);
+    setPasscodeStatus("Authenticating security credentials with server...");
+
+    try {
+      const res = await fetch("/api/auth/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ passcode: cleanCode }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.valid) {
+        localStorage.setItem("odin_passcode", cleanCode);
+        setPasscode(cleanCode);
+        setPasscodeInput("");
+        setPasscodeStatus("✓ Clearance authorized: Terminal authenticated.");
+        setTimeout(() => setPasscodeStatus(""), 3500);
+      } else {
+        setPasscodeStatus(`✗ ${data.error || "Access Denied: Invalid passcode."}`);
+      }
+    } catch {
+      setPasscodeStatus("✗ Authentication failed: Could not reach security endpoint.");
+    } finally {
+      setVerifyingPasscode(false);
+    }
   };
 
   const handleRevokePasscode = () => {
@@ -248,16 +291,44 @@ export default function JarvisDashboard() {
               </button>
             ) : (
               <form onSubmit={handleSavePasscode} style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
-                <input
-                  type="password"
-                  placeholder="Enter Access Passcode..."
-                  value={passcodeInput}
-                  onChange={(e) => setPasscodeInput(e.target.value)}
-                  className="hud-input"
-                  style={{ width: "220px" }}
-                />
-                <button type="submit" className="hud-button" style={{ fontSize: "0.75rem" }}>
-                  AUTHORIZE
+                <div style={{ position: "relative", display: "inline-flex", alignItems: "center" }}>
+                  <input
+                    type={showPasscode ? "text" : "password"}
+                    placeholder="Enter Access Passcode..."
+                    value={passcodeInput}
+                    onChange={(e) => setPasscodeInput(e.target.value)}
+                    className="hud-input"
+                    style={{ width: "230px", paddingRight: "2.4rem" }}
+                    disabled={verifyingPasscode}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPasscode(!showPasscode)}
+                    title={showPasscode ? "Hide Passcode" : "Show Passcode"}
+                    style={{
+                      position: "absolute",
+                      right: "0.5rem",
+                      background: "none",
+                      border: "none",
+                      color: "var(--text-secondary)",
+                      cursor: "pointer",
+                      fontSize: "0.9rem",
+                      padding: "0.2rem",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    {showPasscode ? "🙈" : "👁️"}
+                  </button>
+                </div>
+                <button
+                  type="submit"
+                  disabled={verifyingPasscode || !passcodeInput.trim()}
+                  className="hud-button"
+                  style={{ fontSize: "0.75rem" }}
+                >
+                  {verifyingPasscode ? "AUTHENTICATING..." : "AUTHORIZE"}
                 </button>
               </form>
             )}
