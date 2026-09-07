@@ -8,6 +8,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Phase 2 Foundations**: Updated PRD to v1.2. Pivot planned from Streamlit to Next.js (React) + Supabase + Web Speech API.
+- **Security & Governance Protocols**: Integrated 5 core protocols into the project foundation:
+  - Universal IT Project Development Protocol (v1.0)
+  - Agentic Infrastructure Manifest (AIM)
+  - Cybersecurity Protocol for Vibecoding
+  - Universal Project Security Protocol
+  - Supplementary Modern Cybersecurity Development Whitepaper
+- **Guardrails**: Scaffolded `.agents/hooks/pre_tool_check.py` implementing ClawGuardInterceptor logic to enforce deterministic boundaries on AI agent actions.
+
+## [0.2.2] - Phase 1 Cloud MVP
+
+### Added
 - Initialized MVP planning phase.
 - Project foundation scaffolding (README, CHANGELOG, BACKLOG, ARCHITECTURE).
 - Configured 5-layer Agent Architecture `.agents` directory per AIM protocol.

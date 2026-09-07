@@ -14,8 +14,6 @@ dist/
 downloads/
 eggs/
 .eggs/
-/lib/
-/lib64/
 parts/
 sdist/
 var/
@@ -35,9 +33,24 @@ ENV/
 env.bak/
 venv.bak/
 
-# Streamlit secrets
+# Environment variables & secrets
+.env*.local
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
 .streamlit/secrets.toml
 secrets.toml
+
+# Node / Next.js (Phase 2)
+node_modules/
+.next/
+out/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
 
 # IDEs and Editors
 .vscode/

@@ -1,0 +1,278 @@
+/* ==========================================================================
+   O.D.I.N. Design System & Tokens (Phase 2 — JARVIS Interface)
+   Informed by: Impeccable, Emil Design Eng, Apple Fluid Motion
+   ========================================================================== */
+
+:root {
+  /* Color Palette - Deep Space & Electric Cyan HUD */
+  --bg-deep: #050811;
+  --bg-surface: rgba(10, 17, 36, 0.72);
+  --bg-surface-hover: rgba(16, 26, 54, 0.85);
+  --bg-surface-active: rgba(22, 38, 77, 0.95);
+  --bg-card: rgba(13, 21, 45, 0.6);
+  --bg-card-subtle: rgba(255, 255, 255, 0.02);
+
+  --border-subtle: rgba(56, 189, 248, 0.12);
+  --border-medium: rgba(56, 189, 248, 0.28);
+  --border-glow: rgba(0, 240, 255, 0.45);
+
+  --accent-cyan: #00f0ff;
+  --accent-cyan-dim: rgba(0, 240, 255, 0.15);
+  --accent-blue: #38bdf8;
+  --accent-indigo: #6366f1;
+  --accent-emerald: #10b981;
+  --accent-amber: #f59e0b;
+  --accent-rose: #f43f5e;
+
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --text-cyan: #38bdf8;
+
+  /* Typography */
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "JetBrains Mono", "Fira Code", monospace;
+  --font-display: "Orbitron", var(--font-sans);
+
+  /* Animation Easings & Durations (Emil Kowalski specification) */
+  --ease-out-snappy: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out-smooth: cubic-bezier(0.77, 0, 0.175, 1);
+  --duration-fast: 160ms;
+  --duration-normal: 240ms;
+  --duration-slow: 400ms;
+
+  /* Glassmorphic Shadows & Glows */
+  --glow-cyan: 0 0 24px rgba(0, 240, 255, 0.18);
+  --glow-cyan-sm: 0 0 12px rgba(0, 240, 255, 0.28);
+  --shadow-surface: 0 12px 36px -8px rgba(0, 0, 0, 0.6);
+}
+
+/* Reset & Baseline */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  min-height: 100%;
+  background-color: var(--bg-deep);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* Ambient Radial Glow & Grid Background */
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 1000px;
+  height: 500px;
+  background: radial-gradient(circle at 50% 0%, rgba(0, 240, 255, 0.12) 0%, rgba(99, 102, 241, 0.05) 50%, transparent 80%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image: 
+    linear-gradient(rgba(56, 189, 248, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(56, 189, 248, 0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Typography Utilities */
+.font-mono {
+  font-family: var(--font-mono);
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+/* Container & Layout */
+.app-container {
+  position: relative;
+  z-index: 1;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+/* JARVIS Glass Card */
+.jarvis-card {
+  background: var(--bg-surface);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: var(--shadow-surface);
+  transition: transform var(--duration-fast) var(--ease-out-snappy),
+              border-color var(--duration-fast) var(--ease-out-snappy),
+              box-shadow var(--duration-fast) var(--ease-out-snappy);
+  position: relative;
+  overflow: hidden;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .jarvis-card:hover {
+    border-color: var(--border-medium);
+    box-shadow: var(--shadow-surface), var(--glow-cyan-sm);
+  }
+}
+
+/* Corner HUD accent line */
+.jarvis-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 48px;
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent-cyan), transparent);
+}
+
+/* Buttons with Emil Kowalski press mechanics */
+.hud-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1.25rem;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--accent-cyan);
+  background: rgba(0, 240, 255, 0.08);
+  border: 1px solid var(--border-medium);
+  border-radius: 8px;
+  cursor: pointer;
+  outline: none;
+  transition: transform var(--duration-fast) var(--ease-out-snappy),
+              background var(--duration-fast) var(--ease-out-snappy),
+              border-color var(--duration-fast) var(--ease-out-snappy),
+              box-shadow var(--duration-fast) var(--ease-out-snappy);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .hud-button:hover {
+    background: rgba(0, 240, 255, 0.16);
+    border-color: var(--accent-cyan);
+    box-shadow: var(--glow-cyan-sm);
+  }
+}
+
+.hud-button:active {
+  transform: scale(0.97);
+}
+
+.hud-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Badges & Telemetry Pills */
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: 9999px;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  font-weight: 600;
+  border: 1px solid transparent;
+}
+
+.status-pill.online {
+  color: #34d399;
+  background: rgba(16, 185, 129, 0.12);
+  border-color: rgba(16, 185, 129, 0.35);
+}
+
+.status-pill.warning {
+  color: #fbbf24;
+  background: rgba(245, 158, 11, 0.12);
+  border-color: rgba(245, 158, 11, 0.35);
+}
+
+.status-pill.cyan {
+  color: var(--accent-cyan);
+  background: rgba(0, 240, 255, 0.1);
+  border-color: rgba(0, 240, 255, 0.3);
+}
+
+/* Pulse Dot */
+.pulse-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--accent-emerald);
+  box-shadow: 0 0 8px var(--accent-emerald);
+  animation: pulseGlow 2s infinite var(--ease-in-out-smooth);
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.3);
+    opacity: 0.6;
+  }
+}
+
+/* Grid for Dashboard */
+.hud-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1.5rem;
+}
+
+/* Staggered entrance */
+.stagger-item {
+  opacity: 0;
+  transform: scale(0.97) translateY(8px);
+  animation: entranceFadeIn 320ms var(--ease-out-snappy) forwards;
+}
+
+.stagger-item:nth-child(1) { animation-delay: 40ms; }
+.stagger-item:nth-child(2) { animation-delay: 80ms; }
+.stagger-item:nth-child(3) { animation-delay: 120ms; }
+.stagger-item:nth-child(4) { animation-delay: 160ms; }
+.stagger-item:nth-child(5) { animation-delay: 200ms; }
+
+@keyframes entranceFadeIn {
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Reduced Motion Override */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
