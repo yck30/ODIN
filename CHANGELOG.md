@@ -8,7 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- **Phase 2 Foundations**: Updated PRD to v1.2. Pivot planned from Streamlit to Next.js (React) + Supabase + Web Speech API.
+- **Phase 2 Milestone 1 (M1) — Next.js Scaffold, JARVIS UI & Vercel Deployment**:
+  - Bootstrapped Next.js 15 (React 19, TypeScript) App Router scaffold with zero-conflict coexistence alongside legacy Phase 1 Python files.
+  - Implemented JARVIS aesthetic design system (`app/globals.css`) adhering to Emil Kowalski & Impeccable motion principles: custom cubic-bezier easings (`cubic-bezier(0.23, 1, 0.32, 1)`), tactile `:active` press scaling (`0.97`), staggered entrances, and deep space glassmorphic cards.
+  - Built real-time HUD telemetry dashboard (`app/page.tsx`) with 5-Layer AIM architecture status monitors and dynamic environment probe widgets.
+  - Implemented safe runtime configuration validation (`lib/env.ts`) and serverless diagnostic route (`app/api/health/route.ts`) enforcing zero secret leakage into client bundles or API payloads.
+  - Hardened `.gitignore` to prevent secret leakage (`.env*.local`, `node_modules/`, `.next/`), verified clean passing of `gitleaks` pre-commit hook.
+  - Configured Supabase connection credentials and validated production build for zero-cost continuous deployment on Vercel.
+- **Phase 2 Foundations**: Updated PRD to v1.2. Pivot from Streamlit to Next.js (React) + Supabase + Web Speech API.
 - **Security & Governance Protocols**: Integrated 5 core protocols into the project foundation:
   - Universal IT Project Development Protocol (v1.0)
   - Agentic Infrastructure Manifest (AIM)
