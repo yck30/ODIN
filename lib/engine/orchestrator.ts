@@ -5,6 +5,7 @@ import type {
   StrategistOutput,
   BehavioristOutput,
   JudgeOutput,
+  PastContextItem,
   FullAnalysisResult,
 } from "./types";
 import {
@@ -131,42 +132,47 @@ export async function runJudge(
   ai: GoogleGenAI,
   quant: QuantOutput,
   strat: StrategistOutput,
-  behav: BehavioristOutput
+  behav: BehavioristOutput,
+  pastContext?: PastContextItem[]
 ): Promise<JudgeOutput> {
-  const prompt = formatJudgePrompt(quant, strat, behav);
+  const prompt = formatJudgePrompt(quant, strat, behav, pastContext);
   return callGeminiWithRetry<JudgeOutput>(ai, JUDGE_SYSTEM_PROMPT, prompt, JUDGE_SCHEMA);
 }
 
 /**
  * Executes the complete 4-persona sequential cognitive engine.
  * Sequenced with gentle 2-second pacing pauses to respect free-tier RPM limits.
+ *
+ * FR-23 Strict Persona Independence Rule:
+ * pastContext is passed ONLY to runJudge, never to runQuant, runStrategist, or runBehaviorist.
  */
 export async function executeSequentialAnalysis(
   intake: DecisionIntake,
   apiKey: string,
-  onProgress?: ProgressCallback
+  onProgress?: ProgressCallback,
+  pastContext?: PastContextItem[]
 ): Promise<FullAnalysisResult> {
   const startTime = Date.now();
   const ai = new GoogleGenAI({ apiKey });
 
-  // 1. The Quant
+  // 1. The Quant (Persona Independence Preserved: No pastContext)
   onProgress?.(1, 4, "The Quant is estimating expected values and probability trees...");
   const quant = await runQuant(ai, intake);
   await sleep(2000); // Pacing delay
 
-  // 2. The Strategist
+  // 2. The Strategist (Persona Independence Preserved: No pastContext)
   onProgress?.(2, 4, "The Strategist is evaluating reversibility and adversarial moves...");
   const strategist = await runStrategist(ai, intake);
   await sleep(2000); // Pacing delay
 
-  // 3. The Behaviorist
+  // 3. The Behaviorist (Persona Independence Preserved: No pastContext)
   onProgress?.(3, 4, "The Behaviorist is auditing cognitive biases and psychological blind spots...");
   const behaviorist = await runBehaviorist(ai, intake);
   await sleep(2000); // Pacing delay
 
-  // 4. The Judge
-  onProgress?.(4, 4, "The Judge is synthesizing first principles and arbitrating next actions...");
-  const judge = await runJudge(ai, quant, strategist, behaviorist);
+  // 4. The Judge (Arbitration synthesis with optional past_context)
+  onProgress?.(4, 4, "The Judge is synthesizing first principles and cross-referencing past patterns...");
+  const judge = await runJudge(ai, quant, strategist, behaviorist, pastContext);
 
   const totalDurationMs = Date.now() - startTime;
 

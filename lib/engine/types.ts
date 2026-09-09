@@ -66,7 +66,17 @@ export interface BehavioristOutput extends CommonEnvelope {
 }
 
 /**
- * 20.7 The Judge — First Principles Arbitration
+ * 20.7 Cross-Session Recall Past Context Item (v1.1 amendment)
+ */
+export interface PastContextItem {
+  id?: string;
+  date: string;
+  synthesis: string;
+  similarity?: number;
+}
+
+/**
+ * 20.7 The Judge — First Principles Arbitration (amended in v1.1)
  */
 export interface JudgeOutput {
   synthesis: string;
@@ -74,6 +84,7 @@ export interface JudgeOutput {
   recommended_path: string;
   next_3_actions: [string, string, string]; // exactly 3, each non-empty, sequenced
   mermaid_diagram: string; // valid Mermaid.js syntax
+  pattern_note: string | null; // added in v1.1
 }
 
 /**

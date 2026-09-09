@@ -179,6 +179,11 @@ export const JUDGE_SCHEMA: Schema = {
       type: Type.STRING,
       description: "Valid Mermaid.js syntax for a flowchart visualizing the decision tree and branch points.",
     },
+    pattern_note: {
+      type: Type.STRING,
+      description: "Specific recurring pattern, hesitation, or tradeoff recognized across past decisions, or null if no pattern is detected or past_context is empty.",
+      nullable: true,
+    },
   },
-  required: ["synthesis", "tension_points", "recommended_path", "next_3_actions", "mermaid_diagram"],
+  required: ["synthesis", "tension_points", "recommended_path", "next_3_actions", "mermaid_diagram", "pattern_note"],
 };

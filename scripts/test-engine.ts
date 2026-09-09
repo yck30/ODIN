@@ -84,7 +84,10 @@ async function runTest() {
   if (!result.judge.mermaid_diagram || (!result.judge.mermaid_diagram.includes("graph") && !result.judge.mermaid_diagram.includes("flowchart"))) {
     throw new Error("Judge output failed schema validation: invalid Mermaid.js flowchart syntax.");
   }
-  console.log("  ✓ The Judge: Synthesis valid. Exactly 3 actions sequenced. Mermaid diagram generated.");
+  if (result.judge.pattern_note === undefined) {
+    throw new Error("Judge output failed schema validation: pattern_note field is missing (must be string or null per FR-24).");
+  }
+  console.log(`  ✓ The Judge: Synthesis valid. Exactly 3 actions sequenced. Mermaid diagram & pattern_note (${result.judge.pattern_note === null ? "null" : `"${result.judge.pattern_note}"`}) generated.`);
 
   console.log("\n========================================================");
   console.log("DECISION VERDICT:");

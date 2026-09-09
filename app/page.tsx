@@ -2,6 +2,9 @@
 
 import { useEffect, useState } from "react";
 import MermaidViewer from "@/components/MermaidViewer";
+import VoiceMicButton from "@/components/VoiceMicButton";
+import VoiceReadbackController from "@/components/VoiceReadbackController";
+import CaseHistoryDrawer, { SessionSummary } from "@/components/CaseHistoryDrawer";
 import type { SystemEnvDiagnostics } from "@/lib/env";
 import type { FullAnalysisResult } from "@/lib/engine/types";
 
@@ -43,6 +46,117 @@ export default function JarvisDashboard() {
   const [analysisResult, setAnalysisResult] = useState<FullAnalysisResult | null>(null);
   const [activeTab, setActiveTab] = useState<"judge" | "quant" | "strategist" | "behaviorist">("judge");
 
+  // Case History State (Milestone 5)
+  const [sessionsList, setSessionsList] = useState<SessionSummary[]>([]);
+  const [loadingSessions, setLoadingSessions] = useState<boolean>(false);
+  const [isWakingArchive, setIsWakingArchive] = useState<boolean>(false);
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+  const [dashboardMode, setDashboardMode] = useState<"intake" | "history">("intake");
+  const [historicMetadata, setHistoricMetadata] = useState<{ id: string; created_at: string } | null>(null);
+
+  const fetchSessions = async (activeCode?: string) => {
+    const code = activeCode || passcode || (typeof window !== "undefined" ? localStorage.getItem("odin_passcode") : "") || "";
+    if (!code) return;
+
+    setLoadingSessions(true);
+    setIsWakingArchive(false);
+
+    // If Supabase free tier is waking after inactivity, show PRD status string
+    const wakingTimer = setTimeout(() => {
+      setIsWakingArchive(true);
+    }, 2000);
+
+    try {
+      const res = await fetch("/api/sessions", {
+        headers: {
+          "x-odin-access-passcode": code,
+        },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setSessionsList(data.sessions || []);
+      }
+    } catch (e) {
+      console.warn("Failed to fetch sessions from archive:", e);
+    } finally {
+      clearTimeout(wakingTimer);
+      setLoadingSessions(false);
+      setIsWakingArchive(false);
+    }
+  };
+
+  const handleReopenSession = async (id: string) => {
+    const code = passcode || (typeof window !== "undefined" ? localStorage.getItem("odin_passcode") : "") || "";
+    if (!code) return;
+
+    setAnalyzing(true);
+    setAnalysisStage("Decrypting historic session narrative from Supabase (FR-15 & FR-17)...");
+    setAnalysisError("");
+
+    try {
+      const res = await fetch(`/api/sessions/${id}`, {
+        headers: { "x-odin-access-passcode": code },
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Failed to load session from database.");
+      }
+      const data = await res.json();
+      const session = data.data;
+
+      setCoreObjectives(session.intake.core_objectives || "");
+      setKnownConstraints(session.intake.known_constraints || "");
+      setRawNarrative(session.intake.raw_narrative || "");
+
+      setAnalysisResult({
+        ...session.outputs,
+        metadata: {
+          totalDurationMs: 0,
+          model: session.embedding_model || "Supabase Persistent Vector Archive",
+        },
+      });
+
+      setActiveSessionId(session.id);
+      setHistoricMetadata({ id: session.id, created_at: session.created_at });
+      setActiveTab("judge");
+      setDashboardMode("intake");
+
+      setTimeout(() => {
+        const elem = document.getElementById("deliverables-panel");
+        if (elem) {
+          elem.scrollIntoView({ behavior: "smooth" });
+        }
+      }, 150);
+    } catch (err: unknown) {
+      setAnalysisError(err instanceof Error ? err.message : "Failed to re-open session.");
+    } finally {
+      setAnalyzing(false);
+      setAnalysisStage("");
+    }
+  };
+
+  const handleDeleteSession = async (id: string) => {
+    const code = passcode || (typeof window !== "undefined" ? localStorage.getItem("odin_passcode") : "") || "";
+    if (!code) return;
+
+    const res = await fetch(`/api/sessions/${id}`, {
+      method: "DELETE",
+      headers: { "x-odin-access-passcode": code },
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || "Failed to delete session");
+    }
+
+    setSessionsList((prev) => prev.filter((s) => s.id !== id));
+    if (activeSessionId === id) {
+      setActiveSessionId(null);
+      setHistoricMetadata(null);
+      setAnalysisResult(null);
+    }
+  };
+
   const fetchHealth = async () => {
     setLoadingHealth(true);
     try {
@@ -70,6 +184,7 @@ export default function JarvisDashboard() {
         .then((res) => {
           if (res.ok) {
             setPasscode(savedCode);
+            fetchSessions(savedCode);
           } else {
             localStorage.removeItem("odin_passcode");
             setPasscode("");
@@ -80,6 +195,7 @@ export default function JarvisDashboard() {
         .catch(() => {
           // If server offline, keep local state
           setPasscode(savedCode);
+          fetchSessions(savedCode);
         });
     }
 
@@ -112,6 +228,7 @@ export default function JarvisDashboard() {
       if (res.ok && data.valid) {
         localStorage.setItem("odin_passcode", cleanCode);
         setPasscode(cleanCode);
+        fetchSessions(cleanCode);
         setPasscodeInput("");
         setPasscodeStatus("✓ Clearance authorized: Terminal authenticated.");
         setTimeout(() => setPasscodeStatus(""), 3500);
@@ -128,6 +245,9 @@ export default function JarvisDashboard() {
   const handleRevokePasscode = () => {
     localStorage.removeItem("odin_passcode");
     setPasscode("");
+    setSessionsList([]);
+    setActiveSessionId(null);
+    setHistoricMetadata(null);
     setPasscodeStatus("Security clearance revoked. Access gate locked.");
     setTimeout(() => setPasscodeStatus(""), 3500);
   };
@@ -214,6 +334,11 @@ export default function JarvisDashboard() {
                 setAnalysisResult(parsed);
                 setActiveTab("judge");
                 setAnalysisStage("Cognitive synthesis complete.");
+                if (parsed.sessionId) {
+                  setActiveSessionId(parsed.sessionId);
+                  setHistoricMetadata({ id: parsed.sessionId, created_at: new Date().toISOString() });
+                }
+                fetchSessions();
               } else if (currentEvent === "error") {
                 throw new Error(parsed.message || "Execution error in engine.");
               }
@@ -347,7 +472,111 @@ export default function JarvisDashboard() {
         )}
       </section>
 
+      {/* HUD Mode Navigation: New Intake vs Case History Archive */}
+      <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1.2rem", flexWrap: "wrap" }}>
+        <button
+          onClick={() => setDashboardMode("intake")}
+          className={`hud-button ${dashboardMode === "intake" ? "primary" : ""}`}
+          style={{
+            fontSize: "0.82rem",
+            padding: "0.55rem 1.1rem",
+            display: "flex",
+            alignItems: "center",
+            gap: "0.5rem",
+            backgroundColor: dashboardMode === "intake" ? "rgba(0, 240, 255, 0.15)" : "rgba(10, 17, 36, 0.6)",
+            borderColor: dashboardMode === "intake" ? "var(--accent-cyan)" : "var(--border-subtle)",
+            color: dashboardMode === "intake" ? "var(--accent-cyan)" : "var(--text-secondary)",
+          }}
+        >
+          <span>➕ DECISION INTAKE CONSOLE</span>
+        </button>
+
+        <button
+          onClick={() => {
+            setDashboardMode("history");
+            if (passcode) fetchSessions();
+          }}
+          className={`hud-button ${dashboardMode === "history" ? "primary" : ""}`}
+          style={{
+            fontSize: "0.82rem",
+            padding: "0.55rem 1.1rem",
+            display: "flex",
+            alignItems: "center",
+            gap: "0.5rem",
+            backgroundColor: dashboardMode === "history" ? "rgba(0, 240, 255, 0.15)" : "rgba(10, 17, 36, 0.6)",
+            borderColor: dashboardMode === "history" ? "var(--accent-cyan)" : "var(--border-subtle)",
+            color: dashboardMode === "history" ? "var(--accent-cyan)" : "var(--text-secondary)",
+          }}
+        >
+          <span>🗄️ CASE HISTORY ARCHIVE</span>
+          <span
+            style={{
+              padding: "0.1rem 0.45rem",
+              borderRadius: "9999px",
+              fontSize: "0.7rem",
+              backgroundColor: "rgba(0, 240, 255, 0.2)",
+              color: "var(--accent-cyan)",
+              border: "1px solid rgba(0, 240, 255, 0.4)",
+            }}
+          >
+            {sessionsList.length}
+          </span>
+        </button>
+      </div>
+
+      {/* Case History Archive View */}
+      {dashboardMode === "history" && (
+        <section className="jarvis-card stagger-item">
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.2rem", flexWrap: "wrap", gap: "0.5rem" }}>
+            <div>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
+                <h2 className="font-display" style={{ fontSize: "1.2rem", color: "var(--accent-cyan)", letterSpacing: "0.06em" }}>
+                  PERSISTENT CASE HISTORY ARCHIVE
+                </h2>
+                <span className={`status-pill ${passcode ? "online" : "warning"}`}>
+                  {passcode ? "AUTHORIZED" : "LOCKED"}
+                </span>
+              </div>
+              <p style={{ color: "var(--text-secondary)", fontSize: "0.82rem", marginTop: "0.2rem" }}>
+                Browse past decisions, decrypt raw narratives server-side on demand, and review historical 4-persona syntheses.
+              </p>
+            </div>
+          </div>
+
+          {!passcode ? (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "0.75rem",
+                padding: "0.85rem 1.1rem",
+                background: "rgba(245, 158, 11, 0.08)",
+                border: "1px dashed rgba(245, 158, 11, 0.45)",
+                borderRadius: "8px",
+                color: "var(--accent-amber)",
+                fontSize: "0.82rem",
+                fontFamily: "var(--font-mono)",
+              }}
+            >
+              <span>🔒</span>
+              <span>TERMINAL LOCKED — Enter your Security Clearance Passcode above to access archived decisions.</span>
+            </div>
+          ) : (
+            <CaseHistoryDrawer
+              sessions={sessionsList}
+              loading={loadingSessions}
+              isWaking={isWakingArchive}
+              onSelectSession={handleReopenSession}
+              onDeleteSession={handleDeleteSession}
+              onRefresh={() => fetchSessions()}
+              activeSessionId={activeSessionId}
+            />
+          )}
+        </section>
+      )}
+
       {/* Decision Intake Console */}
+      {dashboardMode === "intake" && (
       <section className="jarvis-card stagger-item">
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.2rem", flexWrap: "wrap", gap: "0.5rem" }}>
           <div>
@@ -420,9 +649,16 @@ export default function JarvisDashboard() {
 
         <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
           <div>
-            <label className="font-mono" style={{ display: "block", fontSize: "0.78rem", color: "var(--accent-cyan)", marginBottom: "0.4rem" }}>
-              CORE OBJECTIVES (PRIMARY OUTCOMES) {!passcode && <span style={{ color: "var(--accent-amber)", fontSize: "0.72rem" }}>(LOCKED)</span>}
-            </label>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.4rem" }}>
+              <label className="font-mono" style={{ fontSize: "0.78rem", color: "var(--accent-cyan)" }}>
+                CORE OBJECTIVES (PRIMARY OUTCOMES) {!passcode && <span style={{ color: "var(--accent-amber)", fontSize: "0.72rem" }}>(LOCKED)</span>}
+              </label>
+              <VoiceMicButton
+                label="Core Objectives"
+                disabled={!passcode || analyzing}
+                onTranscript={(text) => setCoreObjectives((prev) => (prev ? `${prev} ${text}` : text))}
+              />
+            </div>
             <textarea
               className="hud-textarea"
               placeholder={!passcode ? "[TERMINAL LOCKED] Authenticate via Security Clearance Gate above to enter core objectives..." : "e.g. Determine whether to pivot GTM strategy from enterprise direct sales to self-serve PLG..."}
@@ -434,9 +670,16 @@ export default function JarvisDashboard() {
           </div>
 
           <div>
-            <label className="font-mono" style={{ display: "block", fontSize: "0.78rem", color: "var(--accent-blue)", marginBottom: "0.4rem" }}>
-              KNOWN CONSTRAINTS (RUNWAY, CAPITAL, TIMELINE, TEAMS) {!passcode && <span style={{ color: "var(--accent-amber)", fontSize: "0.72rem" }}>(LOCKED)</span>}
-            </label>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.4rem" }}>
+              <label className="font-mono" style={{ fontSize: "0.78rem", color: "var(--accent-blue)" }}>
+                KNOWN CONSTRAINTS (RUNWAY, CAPITAL, TIMELINE, TEAMS) {!passcode && <span style={{ color: "var(--accent-amber)", fontSize: "0.72rem" }}>(LOCKED)</span>}
+              </label>
+              <VoiceMicButton
+                label="Known Constraints"
+                disabled={!passcode || analyzing}
+                onTranscript={(text) => setKnownConstraints((prev) => (prev ? `${prev} ${text}` : text))}
+              />
+            </div>
             <textarea
               className="hud-textarea"
               placeholder={!passcode ? "[TERMINAL LOCKED] Authenticate via Security Clearance Gate above to enter constraints..." : "e.g. 6 months of cash remaining ($300k). 4 engineers, 1 sales lead. Must achieve cash flow break-even before month 7..."}
@@ -448,9 +691,16 @@ export default function JarvisDashboard() {
           </div>
 
           <div>
-            <label className="font-mono" style={{ display: "block", fontSize: "0.78rem", color: "var(--accent-indigo)", marginBottom: "0.4rem" }}>
-              RAW NARRATIVE (FULL SITUATIONAL CONTEXT & CONFLICTING SIGNALS) {!passcode && <span style={{ color: "var(--accent-amber)", fontSize: "0.72rem" }}>(LOCKED)</span>}
-            </label>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.4rem" }}>
+              <label className="font-mono" style={{ fontSize: "0.78rem", color: "var(--accent-indigo)" }}>
+                RAW NARRATIVE (FULL SITUATIONAL CONTEXT & CONFLICTING SIGNALS) {!passcode && <span style={{ color: "var(--accent-amber)", fontSize: "0.72rem" }}>(LOCKED)</span>}
+              </label>
+              <VoiceMicButton
+                label="Raw Narrative"
+                disabled={!passcode || analyzing}
+                onTranscript={(text) => setRawNarrative((prev) => (prev ? `${prev} ${text}` : text))}
+              />
+            </div>
             <textarea
               className="hud-textarea"
               placeholder={!passcode ? "[TERMINAL LOCKED] Authenticate via Security Clearance Gate above to enter narrative context..." : "Describe the full backstory, conflicting internal opinions, external risks, procurement delays, customer signals, and dilemma..."}
@@ -459,6 +709,14 @@ export default function JarvisDashboard() {
               disabled={!passcode || analyzing}
               rows={4}
             />
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "0.35rem", flexWrap: "wrap", gap: "0.5rem" }}>
+              <span style={{ fontSize: "0.72rem", color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>
+                🛡️ App-layer AES-256-GCM encrypted before storage. Note: Avoid entering unhashed secrets, passwords, or personal identity numbers.
+              </span>
+              <span style={{ fontSize: "0.72rem", color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>
+                {rawNarrative.length} / 5,000 chars
+              </span>
+            </div>
           </div>
 
           {analysisError && (
@@ -522,18 +780,98 @@ export default function JarvisDashboard() {
           </div>
         )}
       </section>
+      )}
 
-      {/* Analysis Deliverables Panel (Rendered on Complete) */}
+      {/* Analysis Deliverables Panel (Rendered on Complete or Historic Inspection) */}
       {analysisResult && (
-        <section className="jarvis-card stagger-item">
+        <section className="jarvis-card stagger-item" id="deliverables-panel">
+          {/* Historic Session Decrypted Banner (FR-15 & FR-17) */}
+          {historicMetadata && (
+            <div
+              style={{
+                marginBottom: "1.2rem",
+                padding: "0.85rem 1.1rem",
+                borderRadius: "8px",
+                background: "rgba(0, 240, 255, 0.08)",
+                border: "1px solid var(--accent-cyan)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                flexWrap: "wrap",
+                gap: "0.75rem",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", flexWrap: "wrap" }}>
+                <span className="font-mono" style={{ fontSize: "0.8rem", color: "var(--accent-cyan)", fontWeight: 700 }}>
+                  HISTORIC DOSSIER INSPECTION:
+                </span>
+                <span className="font-mono" style={{ fontSize: "0.78rem", color: "var(--text-secondary)" }}>
+                  ID: {historicMetadata.id.slice(0, 8)}...
+                </span>
+                <span className="font-mono" style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}>
+                  • Recorded: {new Date(historicMetadata.created_at).toLocaleString()}
+                </span>
+                <span
+                  style={{
+                    fontSize: "0.7rem",
+                    fontFamily: "var(--font-mono)",
+                    padding: "0.15rem 0.5rem",
+                    borderRadius: "4px",
+                    background: "rgba(16, 185, 129, 0.15)",
+                    border: "1px solid rgba(16, 185, 129, 0.4)",
+                    color: "#34d399",
+                  }}
+                >
+                  AES-256-GCM NARRATIVE DECRYPTED (FR-15 & FR-17)
+                </span>
+              </div>
+              <button
+                onClick={() => {
+                  setHistoricMetadata(null);
+                  setActiveSessionId(null);
+                }}
+                className="font-mono"
+                style={{
+                  fontSize: "0.75rem",
+                  color: "var(--text-muted)",
+                  background: "transparent",
+                  border: "none",
+                  cursor: "pointer",
+                  textDecoration: "underline",
+                }}
+              >
+                Dismiss Banner
+              </button>
+            </div>
+          )}
+
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem", marginBottom: "1.5rem" }}>
             <div>
               <h2 className="font-display" style={{ fontSize: "1.3rem", color: "var(--accent-cyan)", letterSpacing: "0.06em" }}>
                 COGNITIVE SYNTHESIS DELIVERABLES
               </h2>
               <div className="font-mono" style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginTop: "0.2rem" }}>
-                Computed in {(analysisResult.metadata.totalDurationMs / 1000).toFixed(1)}s via {analysisResult.metadata.model}
+                {historicMetadata ? (
+                  <span>Historical Record Retrieved from Supabase • Model: {analysisResult.metadata.model}</span>
+                ) : (
+                  <span>Computed in {(analysisResult.metadata.totalDurationMs / 1000).toFixed(1)}s via {analysisResult.metadata.model}</span>
+                )}
               </div>
+            </div>
+
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
+              <button
+                onClick={() => {
+                  const code = passcode || (typeof window !== "undefined" ? localStorage.getItem("odin_passcode") || "" : "");
+                  const paramId = activeSessionId ? `&id=${encodeURIComponent(activeSessionId)}` : "";
+                  window.open(`/api/export?decrypt=true&passcode=${encodeURIComponent(code)}${paramId}`, "_blank");
+                }}
+                className="hud-button"
+                style={{ fontSize: "0.75rem", padding: "0.4rem 0.8rem", display: "flex", alignItems: "center", gap: "0.4rem" }}
+                title="Export this complete decision dossier as JSON (FR-25)"
+              >
+                <span>💾 Export Dossier JSON</span>
+              </button>
             </div>
 
             {/* Persona Tabs */}
@@ -568,6 +906,37 @@ export default function JarvisDashboard() {
           {/* TAB 1: THE JUDGE */}
           {activeTab === "judge" && (
             <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+              {/* JARVIS Audio Readback Controller (Milestone 4) */}
+              <VoiceReadbackController
+                synthesis={analysisResult.judge.synthesis}
+                nextActions={analysisResult.judge.next_3_actions}
+              />
+
+              {/* Recognized Recurring Pattern Note (Milestone 5.5 / v1.1 Recall) */}
+              {analysisResult.judge.pattern_note && (
+                <div
+                  style={{
+                    padding: "1rem 1.25rem",
+                    background: "rgba(99, 102, 241, 0.12)",
+                    border: "1px solid rgba(99, 102, 241, 0.4)",
+                    borderRadius: "8px",
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: "0.75rem",
+                  }}
+                >
+                  <span style={{ fontSize: "1.25rem" }}>🧠</span>
+                  <div>
+                    <div className="font-mono" style={{ fontSize: "0.78rem", color: "var(--accent-indigo)", fontWeight: 700, letterSpacing: "0.04em", marginBottom: "0.2rem" }}>
+                      CROSS-SESSION PATTERN RECOGNIZED IN ARCHIVE (M5.5 RECALL)
+                    </div>
+                    <p style={{ fontSize: "0.88rem", color: "var(--text-primary)", lineHeight: 1.5 }}>
+                      {analysisResult.judge.pattern_note}
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {/* Recommended Path Banner */}
               <div style={{ padding: "1.25rem", background: "rgba(0, 240, 255, 0.08)", border: "1px solid var(--accent-cyan)", borderRadius: "8px" }}>
                 <div className="font-mono" style={{ fontSize: "0.78rem", color: "var(--accent-cyan)", marginBottom: "0.3rem" }}>

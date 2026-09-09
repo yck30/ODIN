@@ -370,6 +370,22 @@ body::after {
   }
 }
 
+/* Voice Audio Equalizer Keyframes (Milestone 4) */
+@keyframes eqBar1 {
+  0%, 100% { height: 4px; }
+  50% { height: 16px; }
+}
+
+@keyframes eqBar2 {
+  0%, 100% { height: 14px; }
+  50% { height: 6px; }
+}
+
+@keyframes eqBar3 {
+  0%, 100% { height: 8px; }
+  50% { height: 18px; }
+}
+
 /* Reduced Motion Override */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

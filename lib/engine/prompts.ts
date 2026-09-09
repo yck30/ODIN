@@ -90,6 +90,17 @@ recommended_path — ordered by what should happen first.
 Include a valid Mermaid.js flowchart in mermaid_diagram
 representing the decision path and its key branch point(s).
 
+[ADDED IN v1.1] You may also receive past_context: 0-3 syntheses
+from the person's earlier decisions, most similar to this one.
+Treat past_context strictly as supplementary pattern-recognition
+input, never as authoritative and never as a substitute for this
+session's independent reasoning. If a genuine recurring pattern
+is visible -- the same hesitation, the same kind of tradeoff, a
+repeated outcome -- name it specifically in pattern_note and, if
+relevant, in synthesis or tension_points. If past_context is
+empty, or nothing meaningful connects, set pattern_note to null.
+Never fabricate a pattern to fill the field.
+
 Return ONLY valid JSON matching the provided schema. No prose,
 no markdown fences, outside the JSON object.`;
 
@@ -110,14 +121,16 @@ ${intake.raw_narrative.trim()}`;
 }
 
 /**
- * The Judge call receives the three completed persona JSON envelopes.
+ * The Judge call receives the three completed persona JSON envelopes,
+ * plus optional similarity-matched past_context syntheses (v1.1).
  */
 export function formatJudgePrompt(
   quant: QuantOutput,
   strat: StrategistOutput,
-  behav: BehavioristOutput
+  behav: BehavioristOutput,
+  pastContext?: import("./types").PastContextItem[]
 ): string {
-  return `### COMPLETED PERSONA ANALYSES FOR ARBITRATION
+  let prompt = `### COMPLETED PERSONA ANALYSES FOR ARBITRATION
 
 ---
 #### THE QUANT (OPERATIONS RESEARCH & EXPECTED VALUE)
@@ -129,7 +142,17 @@ ${JSON.stringify(strat, null, 2)}
 
 ---
 #### THE BEHAVIORIST (BEHAVIORAL ECONOMICS & BIAS AUDIT)
-${JSON.stringify(behav, null, 2)}
+${JSON.stringify(behav, null, 2)}`;
 
-Please synthesize these three independent assessments according to First Principles arbitration and provide your definitive synthesis, tension points, recommended path, exactly 3 sequenced next actions, and Mermaid diagram.`;
+  if (pastContext && pastContext.length > 0) {
+    const formattedPast = pastContext.map((item) => ({
+      date: item.date,
+      synthesis: item.synthesis,
+    }));
+    prompt += `\n\n---\n#### PAST DECISION CONTEXT (SIMILARITY-MATCHED RECALL)\n${JSON.stringify(formattedPast, null, 2)}`;
+  }
+
+  prompt += `\n\nPlease synthesize these independent assessments according to First Principles arbitration and provide your definitive synthesis, tension points, recommended path, exactly 3 sequenced next actions, Mermaid diagram, and pattern_note (or null if no pattern detected).`;
+
+  return prompt;
 }

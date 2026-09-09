@@ -18,10 +18,10 @@ This backlog tracks the development milestones for Phase 2 (JARVIS Interface & K
 - [x] **M1:** Next.js scaffold deployed on Vercel free tier; environment variables (Gemini + Supabase keys) configured; gitleaks pre-commit hook carried over.
 - [x] **M2:** Four-call sequential engine ported to Next.js API routes (Server-side only); Section 20 prompts and schemas copied verbatim; Gemini 3.5 Flash pinned.
 - [x] **M2.5 (Access Control & Quota Protection):** Secret Access Passcode Gate implemented (`ODIN_ACCESS_PASSCODE`), HUD security clearance card wired, `/api/analyze` protected against unauthorized public quota drain (HTTP 401 on mismatch).
-- [ ] **M3:** Supabase Auth integration (restricted single-user/whitelist) paired with Supabase schema (Postgres + pgvector) migration; Row-Level Security (RLS) policies enforced via `auth.uid()`; app-layer encryption on `raw_narrative` implemented.
-- [ ] **M4:** Web Speech API voice I/O wired to the intake flow and report readback.
-- [ ] **M5:** JARVIS-aesthetic UI build (case-history list, detail views, progressive-disclosure status strings).
-- [ ] **M5.5 (v1.1):** Cross-session recall built (embedding-then-similarity-query); Judge prompt amended; JSON export endpoint implemented.
+- [x] **M3:** Supabase schema (Postgres + pgvector) migration completed with Row-Level Security (RLS) policies blocking public access; app-layer AES-256-GCM encryption on `raw_narrative` implemented and verified round-trip; Gemini 768-dim vector embeddings of Judge syntheses enabled; session delete endpoint implemented per FR-21.
+- [x] **M4:** Web Speech API voice I/O wired to the intake flow (`useSpeechRecognition`, `VoiceMicButton`) and Judge report readback (`useSpeechSynthesis`, `VoiceReadbackController`); progressive status strings enforced; typed-field fallback verified (FR-13, FR-14).
+- [x] **M5:** JARVIS-aesthetic UI build (`CaseHistoryDrawer`, past session re-opening with server-side narrative decryption [FR-15], in-UI hard deletion [FR-21], progressive-disclosure status strings including Supabase auto-pause waking handling [PRD §21.2]).
+- [x] **M5.5 (v1.1):** Cross-session recall built (embedding-then-similarity-query); Judge prompt amended; JSON export endpoint implemented.
 - [ ] **M6:** Security- and schema-verification pass; Streamlit app retired (hard cutover); $0 spend confirmed.
 - [ ] **N1 (v1.2 Addendum):** `session_outcomes` schema migrated with RLS and app-layer encryption on narrative.
 - [ ] **N2 (v1.2 Addendum):** Opportunistic prompt wired into new-session flow; manual outcome entry/edit added to detail view.
@@ -29,10 +29,10 @@ This backlog tracks the development milestones for Phase 2 (JARVIS Interface & K
 - [ ] **N4 (v1.2 Addendum):** Section 14 QA extended to cover outcome flow end-to-end; $0 spend re-confirmed.
 
 ### Should-Have
-- [ ] Content-hygiene nudge (soft reminder).
-- [ ] Graceful handling of Supabase's free-tier auto-pause ("reconnecting" state).
-- [ ] Graceful voice-unavailable fallback (typed-field flow).
-- [ ] Session delete/purge capability.
+- [x] Content-hygiene nudge (soft reminder in intake console).
+- [x] Graceful handling of Supabase's free-tier auto-pause ("reconnecting" / "Waking the archive…" state).
+- [x] Graceful voice-unavailable fallback (typed-field flow).
+- [x] Session delete/purge capability (FR-21 in-UI hard deletion).
 
 ### Won't-Have (Deferred to Phase 3 or Rejected)
 - [ ] Gemini Live API (rejected due to cost).
