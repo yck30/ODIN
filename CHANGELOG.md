@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Phase 2 Milestone 6 (M6) — Final Security QA, Hard Cutover & Streamlit Retirement**:
+  - Archived legacy Phase 1 Streamlit application via annotated Git tag `phase-1-archive`.
+  - Retired and purged deprecated Python Streamlit files (`src/`, `.streamlit/`, `list_models.py`, `requirements.txt`), completing the hard cutover to pure Next.js 15 App Router.
+  - Performed comprehensive security verification pass: audited `.gitignore` to guarantee zero secret leakage (`.env*.local`, `secrets.toml`), verified `gitleaks` pre-commit configuration, and re-verified Supabase Row-Level Security (RLS).
+  - Confirmed $0 spend ceiling across the entire architecture (Google Gemini Flash free tier, Supabase free Postgres + pgvector tier, Vercel Hobby serverless tier, and browser-native Web Speech API).
 - **Phase 2 Milestone 5.5 (M5.5) — Cross-Session Semantic Recall & Data Portability**:
   - Built semantic vector similarity recall pipeline (`lib/recall.ts`, `match_past_sessions` RPC) executing Gemini 768-dim embeddings against stored Judge syntheses with cosine similarity threshold (`>= 0.65`).
   - Preserved persona independence boundary (FR-23): past context is routed exclusively to The Judge; Quant, Strategist, and Behaviorist remain completely blind to past sessions.

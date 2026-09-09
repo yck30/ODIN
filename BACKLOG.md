@@ -22,7 +22,7 @@ This backlog tracks the development milestones for Phase 2 (JARVIS Interface & K
 - [x] **M4:** Web Speech API voice I/O wired to the intake flow (`useSpeechRecognition`, `VoiceMicButton`) and Judge report readback (`useSpeechSynthesis`, `VoiceReadbackController`); progressive status strings enforced; typed-field fallback verified (FR-13, FR-14).
 - [x] **M5:** JARVIS-aesthetic UI build (`CaseHistoryDrawer`, past session re-opening with server-side narrative decryption [FR-15], in-UI hard deletion [FR-21], progressive-disclosure status strings including Supabase auto-pause waking handling [PRD §21.2]).
 - [x] **M5.5 (v1.1):** Cross-session recall built (embedding-then-similarity-query); Judge prompt amended; JSON export endpoint implemented.
-- [ ] **M6:** Security- and schema-verification pass; Streamlit app retired (hard cutover); $0 spend confirmed.
+- [x] **M6:** Security- and schema-verification pass; Streamlit app retired (hard cutover); $0 spend confirmed.
 - [ ] **N1 (v1.2 Addendum):** `session_outcomes` schema migrated with RLS and app-layer encryption on narrative.
 - [ ] **N2 (v1.2 Addendum):** Opportunistic prompt wired into new-session flow; manual outcome entry/edit added to detail view.
 - [ ] **N3 (v1.2 Addendum):** Judge retrieval payload extended with outcome status/narrative_summary; Judge prompt amended.
