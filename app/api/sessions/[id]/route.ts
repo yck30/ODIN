@@ -57,6 +57,34 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
       }
     }
 
+    // Fetch outcome if recorded (v1.2 Addendum)
+    let outcomePayload = null;
+    const { data: outcomeData } = await serverClient
+      .from("session_outcomes")
+      .select("id, status, narrative_encrypted, prompted_via, recorded_at, updated_at")
+      .eq("session_id", id)
+      .maybeSingle();
+
+    if (outcomeData) {
+      let decryptedOutcomeNarrative = null;
+      if (outcomeData.narrative_encrypted) {
+        try {
+          decryptedOutcomeNarrative = decryptNarrative(outcomeData.narrative_encrypted);
+        } catch (decErr) {
+          console.error("Outcome narrative decryption error for session", id, decErr);
+          decryptedOutcomeNarrative = "[Decryption Error]";
+        }
+      }
+      outcomePayload = {
+        id: outcomeData.id,
+        status: outcomeData.status,
+        narrative: decryptedOutcomeNarrative,
+        prompted_via: outcomeData.prompted_via,
+        recorded_at: outcomeData.recorded_at,
+        updated_at: outcomeData.updated_at,
+      };
+    }
+
     const payload = {
       id: data.id,
       created_at: data.created_at,
@@ -71,6 +99,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
         behaviorist: data.behaviorist_output,
         judge: data.judge_output,
       },
+      outcome: outcomePayload,
       embedding_model: data.embedding_model,
     };
 

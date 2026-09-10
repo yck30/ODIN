@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
     const serverClient = getServerSupabaseClient();
     const { data, error } = await serverClient
       .from("sessions")
-      .select("id, created_at, core_objectives, known_constraints, judge_output")
+      .select("id, created_at, core_objectives, known_constraints, judge_output, session_outcomes(status, prompted_via)")
       .order("created_at", { ascending: false })
       .limit(50);
 
@@ -36,13 +36,22 @@ export async function GET(req: NextRequest) {
     }
 
     // Format safe summary response for UI case history list
-    const sessions = (data || []).map((row) => ({
-      id: row.id,
-      created_at: row.created_at,
-      core_objectives: row.core_objectives,
-      known_constraints: row.known_constraints,
-      recommended_path: row.judge_output?.recommended_path || "Synthesis Available",
-    }));
+    const sessions = (data || []).map((row: any) => {
+      // session_outcomes may be returned as single object or array depending on PostgREST relation
+      const outcomeData = Array.isArray(row.session_outcomes)
+        ? row.session_outcomes[0]
+        : row.session_outcomes;
+
+      return {
+        id: row.id,
+        created_at: row.created_at,
+        core_objectives: row.core_objectives,
+        known_constraints: row.known_constraints,
+        recommended_path: row.judge_output?.recommended_path || "Synthesis Available",
+        outcome_status: outcomeData?.status || null,
+        prompted_via: outcomeData?.prompted_via || null,
+      };
+    });
 
     return NextResponse.json({ status: "success", sessions }, { status: 200 });
   } catch (err: unknown) {

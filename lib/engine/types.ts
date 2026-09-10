@@ -66,12 +66,21 @@ export interface BehavioristOutput extends CommonEnvelope {
 }
 
 /**
- * 20.7 Cross-Session Recall Past Context Item (v1.1 amendment)
+ * 20.7 Cross-Session Recall Past Context Outcome (v1.2 Addendum extension)
+ */
+export interface PastContextOutcome {
+  status: "followed_path" | "deviated" | "still_deciding";
+  narrative_summary: string | null;
+}
+
+/**
+ * 20.7 Cross-Session Recall Past Context Item (v1.1 amendment, extended in v1.2)
  */
 export interface PastContextItem {
   id?: string;
   date: string;
   synthesis: string;
+  outcome?: PastContextOutcome | null;
   similarity?: number;
 }
 

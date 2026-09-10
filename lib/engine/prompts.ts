@@ -101,6 +101,21 @@ relevant, in synthesis or tension_points. If past_context is
 empty, or nothing meaningful connects, set pattern_note to null.
 Never fabricate a pattern to fill the field.
 
+[ADDED IN v1.2] Some past_context entries may include an outcome:
+what actually happened after that earlier decision. Weigh a
+recorded outcome more heavily than a synthesis with no outcome --
+a validated result is stronger evidence than an untested
+conclusion. If status is followed_path and the outcome was
+clearly poor per narrative_summary, that is a meaningful signal
+worth naming plainly, even if it complicates the current
+recommendation. If status is deviated and things went well anyway,
+note that too -- it may mean the earlier reasoning was overly
+cautious. Do not treat outcome: null, or the absence of past_
+context entirely, as a negative signal of any kind -- it usually
+just means too little history exists yet. Do not generalize from
+a single past outcome as if it were a proven pattern; say so
+explicitly if the evidence is thin.
+
 Return ONLY valid JSON matching the provided schema. No prose,
 no markdown fences, outside the JSON object.`;
 
@@ -122,7 +137,7 @@ ${intake.raw_narrative.trim()}`;
 
 /**
  * The Judge call receives the three completed persona JSON envelopes,
- * plus optional similarity-matched past_context syntheses (v1.1).
+ * plus optional similarity-matched past_context syntheses and outcomes (v1.2).
  */
 export function formatJudgePrompt(
   quant: QuantOutput,
@@ -145,11 +160,15 @@ ${JSON.stringify(strat, null, 2)}
 ${JSON.stringify(behav, null, 2)}`;
 
   if (pastContext && pastContext.length > 0) {
-    const formattedPast = pastContext.map((item) => ({
-      date: item.date,
-      synthesis: item.synthesis,
-    }));
-    prompt += `\n\n---\n#### PAST DECISION CONTEXT (SIMILARITY-MATCHED RECALL)\n${JSON.stringify(formattedPast, null, 2)}`;
+    prompt += `\n\n---\n#### RECALLED HISTORICAL PRECEDENT (PAST CONTEXT & OUTCOMES)\n${JSON.stringify(
+      pastContext.map((c) => ({
+        date: c.date,
+        synthesis: c.synthesis,
+        outcome: c.outcome || null,
+      })),
+      null,
+      2
+    )}`;
   }
 
   prompt += `\n\nPlease synthesize these independent assessments according to First Principles arbitration and provide your definitive synthesis, tension points, recommended path, exactly 3 sequenced next actions, Mermaid diagram, and pattern_note (or null if no pattern detected).`;

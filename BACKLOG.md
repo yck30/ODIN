@@ -23,10 +23,10 @@ This backlog tracks the development milestones for Phase 2 (JARVIS Interface & K
 - [x] **M5:** JARVIS-aesthetic UI build (`CaseHistoryDrawer`, past session re-opening with server-side narrative decryption [FR-15], in-UI hard deletion [FR-21], progressive-disclosure status strings including Supabase auto-pause waking handling [PRD §21.2]).
 - [x] **M5.5 (v1.1):** Cross-session recall built (embedding-then-similarity-query); Judge prompt amended; JSON export endpoint implemented.
 - [x] **M6:** Security- and schema-verification pass; Streamlit app retired (hard cutover); $0 spend confirmed.
-- [ ] **N1 (v1.2 Addendum):** `session_outcomes` schema migrated with RLS and app-layer encryption on narrative.
-- [ ] **N2 (v1.2 Addendum):** Opportunistic prompt wired into new-session flow; manual outcome entry/edit added to detail view.
-- [ ] **N3 (v1.2 Addendum):** Judge retrieval payload extended with outcome status/narrative_summary; Judge prompt amended.
-- [ ] **N4 (v1.2 Addendum):** Section 14 QA extended to cover outcome flow end-to-end; $0 spend re-confirmed.
+- [x] **N1 (v1.2 Addendum):** `session_outcomes` schema migrated with RLS and app-layer encryption on narrative.
+- [x] **N2 (v1.2 Addendum):** Opportunistic prompt wired into new-session flow; manual outcome entry/edit added to detail view.
+- [x] **N3 (v1.2 Addendum):** Judge retrieval payload extended with outcome status/narrative_summary; Judge prompt amended.
+- [x] **N4 (v1.2 Addendum):** Section 14 QA extended to cover outcome flow end-to-end; $0 spend re-confirmed.
 
 ### Should-Have
 - [x] Content-hygiene nudge (soft reminder in intake console).

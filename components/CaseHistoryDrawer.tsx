@@ -8,6 +8,8 @@ export interface SessionSummary {
   core_objectives: string;
   known_constraints?: string;
   recommended_path: string;
+  outcome_status?: "followed_path" | "deviated" | "still_deciding" | null;
+  prompted_via?: "opportunistic" | "manual" | null;
 }
 
 interface CaseHistoryDrawerProps {
@@ -33,11 +35,20 @@ export default function CaseHistoryDrawer({
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
+  // Outcome edit state (FR-30)
+  const [editingOutcomeSession, setEditingOutcomeSession] = useState<SessionSummary | null>(null);
+  const [outcomeStatus, setOutcomeStatus] = useState<"followed_path" | "deviated" | "still_deciding">("followed_path");
+  const [outcomeNarrative, setOutcomeNarrative] = useState("");
+  const [loadingOutcomeDetails, setLoadingOutcomeDetails] = useState(false);
+  const [savingOutcome, setSavingOutcome] = useState(false);
+  const [outcomeError, setOutcomeError] = useState<string | null>(null);
+
   const filteredSessions = sessions.filter((s) => {
     const q = searchTerm.toLowerCase();
     return (
       s.core_objectives.toLowerCase().includes(q) ||
       s.recommended_path.toLowerCase().includes(q) ||
+      (s.outcome_status && s.outcome_status.toLowerCase().includes(q)) ||
       new Date(s.created_at).toLocaleDateString().includes(q)
     );
   });
@@ -53,6 +64,70 @@ export default function CaseHistoryDrawer({
     }
   };
 
+  const handleOpenOutcomeEditor = async (session: SessionSummary, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditingOutcomeSession(session);
+    setOutcomeStatus(session.outcome_status || "followed_path");
+    setOutcomeNarrative("");
+    setOutcomeError(null);
+    setLoadingOutcomeDetails(true);
+
+    try {
+      const passcode = typeof window !== "undefined" ? localStorage.getItem("odin_passcode") || "" : "";
+      const headers: Record<string, string> = {};
+      if (passcode) headers["x-odin-access-passcode"] = passcode;
+
+      const res = await fetch(`/api/sessions/${session.id}/outcomes`, { headers });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.outcome) {
+          setOutcomeStatus(data.outcome.status || "followed_path");
+          setOutcomeNarrative(data.outcome.narrative || "");
+        }
+      }
+    } catch (err) {
+      console.warn("Could not load existing outcome narrative:", err);
+    } finally {
+      setLoadingOutcomeDetails(false);
+    }
+  };
+
+  const handleSaveOutcome = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingOutcomeSession) return;
+    setSavingOutcome(true);
+    setOutcomeError(null);
+
+    try {
+      const passcode = typeof window !== "undefined" ? localStorage.getItem("odin_passcode") || "" : "";
+      const res = await fetch(`/api/sessions/${editingOutcomeSession.id}/outcomes`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-odin-access-passcode": passcode,
+        },
+        body: JSON.stringify({
+          status: outcomeStatus,
+          narrative: outcomeNarrative.trim(),
+          prompted_via: "manual",
+          passcode,
+        }),
+      });
+
+      if (!res.ok) {
+        const errJson = await res.json();
+        throw new Error(errJson.error || "Failed to save outcome.");
+      }
+
+      setEditingOutcomeSession(null);
+      onRefresh();
+    } catch (err) {
+      setOutcomeError(err instanceof Error ? err.message : "Failed to record outcome.");
+    } finally {
+      setSavingOutcome(false);
+    }
+  };
+
   return (
     <div className="flex flex-col gap-4">
       {/* Search & Utility Bar */}
@@ -61,7 +136,7 @@ export default function CaseHistoryDrawer({
           <span className="text-slate-500 text-sm font-mono">🔍</span>
           <input
             type="text"
-            placeholder="Search past cases by objective, verdict, or date..."
+            placeholder="Search past cases by objective, verdict, outcome, or date..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full bg-transparent text-xs font-mono text-slate-200 placeholder-slate-500 focus:outline-none"
@@ -89,20 +164,35 @@ export default function CaseHistoryDrawer({
             }}
             disabled={loading || filteredSessions.length === 0}
             className="px-2.5 py-1 text-xs font-mono rounded bg-slate-900 border border-slate-700 hover:border-cyan-500/80 text-cyan-300 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-            title="Export all archived sessions as portable JSON (FR-25)"
+            title="Export all archived sessions as portable human-readable JSON (FR-25 & FR-31)"
           >
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
             </svg>
-            <span>Export JSON</span>
+            <span>Export Decrypted</span>
+          </button>
+
+          <button
+            onClick={() => {
+              const code = typeof window !== "undefined" ? localStorage.getItem("odin_passcode") || "" : "";
+              if (!code) return;
+              window.open(`/api/export?passcode=${encodeURIComponent(code)}`, "_blank");
+            }}
+            disabled={loading || filteredSessions.length === 0}
+            className="px-2.5 py-1 text-xs font-mono rounded bg-slate-900 border border-slate-700 hover:border-slate-500 text-slate-400 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+            title="Export all sessions with narrative encrypted (Safe Backup)"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+            <span>Backup Ciphertext</span>
           </button>
 
           <button
             onClick={onRefresh}
             disabled={loading}
-            aria-label="Refresh case history archive"
-            className="p-1.5 rounded bg-slate-900 border border-slate-700 hover:border-cyan-500 text-slate-300 hover:text-cyan-300 transition-all text-xs font-mono disabled:opacity-50 cursor-pointer"
-            title="Refresh memory archive"
+            className="p-1.5 text-xs font-mono rounded bg-slate-900 border border-slate-700 hover:border-slate-600 text-slate-300 transition-all disabled:opacity-50 cursor-pointer"
+            title="Refresh Archive"
           >
             <svg
               className={`w-3.5 h-3.5 ${loading ? "animate-spin text-cyan-400" : ""}`}
@@ -110,39 +200,42 @@ export default function CaseHistoryDrawer({
               viewBox="0 0 24 24"
               stroke="currentColor"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-              />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
           </button>
         </div>
       </div>
 
-      {/* Loading / Waking state per PRD §21.2 */}
-      {loading && (
-        <div className="p-8 text-center bg-slate-950/40 border border-cyan-500/20 rounded-xl">
-          <div className="inline-flex items-center gap-2 text-cyan-400 font-mono text-xs animate-pulse">
-            <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
-            {isWaking ? "Waking the archive…" : "Retrieving decision records from Supabase…"}
+      {/* Supabase Free-Tier Cold-Start Waking Alert (PRD §21.2) */}
+      {isWaking && (
+        <div className="flex items-center gap-3 p-3 bg-amber-950/40 border border-amber-500/40 rounded-xl text-amber-300 text-xs font-mono animate-pulse">
+          <span className="text-base">⏳</span>
+          <div className="flex-1">
+            <span className="font-bold">Waking the archive…</span>
+            <p className="text-[11px] text-amber-400/80 mt-0.5">
+              Supabase free-tier database is spinning up after inactivity. Case dossiers will load momentarily.
+            </p>
           </div>
-          <p className="text-[11px] font-mono text-slate-500 mt-1">
-            Re-establishing connection with persistent vector memory cluster.
-          </p>
+        </div>
+      )}
+
+      {/* Loading Skeleton */}
+      {loading && !isWaking && (
+        <div className="flex flex-col gap-3 py-6 items-center justify-center text-slate-500 font-mono text-xs">
+          <div className="w-6 h-6 border-2 border-cyan-500/40 border-t-cyan-400 rounded-full animate-spin" />
+          <span>Scanning persistent case records…</span>
         </div>
       )}
 
       {/* Empty State */}
-      {!loading && sessions.length === 0 && (
-        <div className="p-10 text-center bg-slate-950/40 border border-dashed border-slate-800 rounded-xl">
-          <div className="text-2xl mb-2">🗄️</div>
-          <div className="font-mono text-xs font-semibold text-slate-300 tracking-wide">
-            ARCHIVE IS CURRENTLY EMPTY
-          </div>
-          <p className="text-[11px] font-mono text-slate-500 mt-1 max-w-md mx-auto">
-            No past decisions recorded yet. Submit your first dilemma via the Intake Console to create an encrypted, persistent entry.
+      {!loading && filteredSessions.length === 0 && (
+        <div className="p-8 border border-dashed border-slate-800 rounded-xl text-center font-mono">
+          <span className="text-2xl mb-2 block">📂</span>
+          <p className="text-slate-400 text-xs font-semibold">
+            {searchTerm ? "No archived decisions match your query." : "No decision cases stored yet."}
+          </p>
+          <p className="text-slate-600 text-[11px] mt-1">
+            {searchTerm ? "Try searching by another keyword or clear the search filter." : "Synthesize a decision in the intake console to establish your first persistent case record."}
           </p>
         </div>
       )}
@@ -179,6 +272,33 @@ export default function CaseHistoryDrawer({
                           ACTIVE INSPECTION
                         </span>
                       )}
+
+                      {/* Outcome Status Badge (FR-28, FR-30) */}
+                      {session.outcome_status === "followed_path" && (
+                        <span className="text-[10px] font-mono text-emerald-300 bg-emerald-950/60 border border-emerald-500/50 px-2 py-0.5 rounded flex items-center gap-1">
+                          <span>✓</span> FOLLOWED PATH
+                        </span>
+                      )}
+                      {session.outcome_status === "deviated" && (
+                        <span className="text-[10px] font-mono text-amber-300 bg-amber-950/60 border border-amber-500/50 px-2 py-0.5 rounded flex items-center gap-1">
+                          <span>⚡</span> DEVIATED
+                        </span>
+                      )}
+                      {session.outcome_status === "still_deciding" && (
+                        <span className="text-[10px] font-mono text-blue-300 bg-blue-950/60 border border-blue-500/50 px-2 py-0.5 rounded flex items-center gap-1">
+                          <span>⏳</span> STILL DECIDING
+                        </span>
+                      )}
+                      {!session.outcome_status && (
+                        <button
+                          onClick={(e) => handleOpenOutcomeEditor(session, e)}
+                          className="text-[10px] font-mono text-slate-400 hover:text-cyan-300 bg-slate-800/60 hover:bg-slate-800 border border-dashed border-slate-700 hover:border-cyan-500/50 px-2 py-0.5 rounded transition-all cursor-pointer"
+                          title="Record what actually happened after this decision (FR-30)"
+                        >
+                          + LOG OUTCOME
+                        </button>
+                      )}
+
                       <span className="text-[10px] font-mono text-slate-500 truncate max-w-[120px]">
                         ID: {session.id.slice(0, 8)}...
                       </span>
@@ -212,6 +332,15 @@ export default function CaseHistoryDrawer({
                       <span>{isSelected ? "Inspecting" : "Re-Open"}</span>
                     </button>
 
+                    {/* Manage Outcome Button (FR-30) */}
+                    <button
+                      onClick={(e) => handleOpenOutcomeEditor(session, e)}
+                      className="px-2.5 py-1 text-[11px] font-mono rounded bg-slate-900/80 border border-slate-700 hover:border-slate-500 text-slate-300 hover:text-cyan-300 transition-all cursor-pointer flex items-center gap-1"
+                    >
+                      <span>📝</span>
+                      <span>{session.outcome_status ? "Edit Outcome" : "Log Outcome"}</span>
+                    </button>
+
                     {isConfirming ? (
                       <div className="flex items-center gap-1.5">
                         <button
@@ -238,12 +367,10 @@ export default function CaseHistoryDrawer({
                           setConfirmDeleteId(session.id);
                         }}
                         aria-label="Delete past session"
-                        className="p-1.5 text-xs font-mono text-slate-500 hover:text-red-400 transition-colors cursor-pointer rounded hover:bg-red-950/30"
-                        title="Permanently delete session (FR-21)"
+                        title="Purge session permanently from Supabase (FR-21)"
+                        className="px-2 py-1 text-[11px] font-mono text-slate-500 hover:text-red-400 hover:bg-red-950/30 rounded border border-transparent hover:border-red-900/50 transition-all cursor-pointer"
                       >
-                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
+                        Delete
                       </button>
                     )}
                   </div>
@@ -251,6 +378,122 @@ export default function CaseHistoryDrawer({
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Manual Outcome Modal (FR-30) */}
+      {editingOutcomeSession && (
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-slate-950 border border-cyan-500/40 rounded-2xl max-w-lg w-full p-5 shadow-[0_0_30px_rgba(6,182,212,0.2)] font-mono">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
+              <div className="flex items-center gap-2">
+                <span className="text-cyan-400">📝</span>
+                <h3 className="text-sm font-bold text-slate-200 uppercase tracking-wider">
+                  {editingOutcomeSession.outcome_status ? "Edit Decision Outcome" : "Record Decision Outcome"}
+                </h3>
+              </div>
+              <button
+                onClick={() => setEditingOutcomeSession(null)}
+                className="text-slate-500 hover:text-slate-300 text-sm px-2 cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="text-xs text-slate-400 mb-3 bg-slate-900/60 p-2.5 rounded-lg border border-slate-800">
+              <span className="text-slate-500 block text-[10px] uppercase">Decision Objective:</span>
+              <span className="text-slate-200 font-semibold">{editingOutcomeSession.core_objectives}</span>
+            </div>
+
+            {loadingOutcomeDetails ? (
+              <div className="py-8 text-center text-xs text-slate-500 animate-pulse">
+                Decrypting existing outcome details...
+              </div>
+            ) : (
+              <form onSubmit={handleSaveOutcome} className="flex flex-col gap-4">
+                <div>
+                  <label className="block text-[11px] text-cyan-300 uppercase tracking-wider mb-1.5 font-bold">
+                    Execution Status (Required)
+                  </label>
+                  <div className="grid grid-cols-3 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setOutcomeStatus("followed_path")}
+                      className={`p-2 rounded-lg border text-xs font-mono transition-all cursor-pointer ${
+                        outcomeStatus === "followed_path"
+                          ? "bg-emerald-950/80 border-emerald-500 text-emerald-300 font-bold shadow-[0_0_10px_rgba(16,185,129,0.3)]"
+                          : "bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700"
+                      }`}
+                    >
+                      ✓ Followed Path
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setOutcomeStatus("deviated")}
+                      className={`p-2 rounded-lg border text-xs font-mono transition-all cursor-pointer ${
+                        outcomeStatus === "deviated"
+                          ? "bg-amber-950/80 border-amber-500 text-amber-300 font-bold shadow-[0_0_10px_rgba(245,158,11,0.3)]"
+                          : "bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700"
+                      }`}
+                    >
+                      ⚡ Deviated
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setOutcomeStatus("still_deciding")}
+                      className={`p-2 rounded-lg border text-xs font-mono transition-all cursor-pointer ${
+                        outcomeStatus === "still_deciding"
+                          ? "bg-blue-950/80 border-blue-500 text-blue-300 font-bold shadow-[0_0_10px_rgba(59,130,246,0.3)]"
+                          : "bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700"
+                      }`}
+                    >
+                      ⏳ Still Deciding
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-[11px] text-slate-400 uppercase tracking-wider">
+                      Reflection Narrative (Optional)
+                    </label>
+                    <span className="text-[10px] text-slate-500">🛡️ AES-256 Encrypted</span>
+                  </div>
+                  <textarea
+                    rows={4}
+                    placeholder="What actually occurred? Did the recommended strategy yield expected results, or were there unforeseen surprises?"
+                    value={outcomeNarrative}
+                    onChange={(e) => setOutcomeNarrative(e.target.value)}
+                    className="w-full bg-slate-900/80 border border-slate-800 rounded-xl p-3 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-cyan-500/80 font-mono"
+                  />
+                </div>
+
+                {outcomeError && (
+                  <div className="p-2.5 rounded bg-rose-950/50 border border-rose-600/50 text-rose-300 text-xs">
+                    {outcomeError}
+                  </div>
+                )}
+
+                <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
+                  <button
+                    type="button"
+                    onClick={() => setEditingOutcomeSession(null)}
+                    disabled={savingOutcome}
+                    className="px-3 py-1.5 rounded-lg border border-slate-800 hover:bg-slate-900 text-slate-400 text-xs cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={savingOutcome}
+                    className="px-4 py-1.5 rounded-lg bg-cyan-500 text-slate-950 font-bold text-xs hover:bg-cyan-400 active:scale-95 transition-all shadow-[0_0_15px_rgba(6,182,212,0.4)] cursor-pointer disabled:opacity-50"
+                  >
+                    {savingOutcome ? "Encrypting & Storing…" : "Save Outcome"}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
         </div>
       )}
     </div>

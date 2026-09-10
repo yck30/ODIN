@@ -53,11 +53,46 @@ export async function findSimilarPastDecisions(
       return [];
     }
 
-    // 3. Format matches into clean PastContextItem envelopes for the Judge call
+    // 3. Retrieve any recorded outcomes for the matched sessions (v1.2 Addendum FR-29)
+    const matchedIds = data.map((row: any) => row.id).filter(Boolean);
+    const outcomesBySessionId = new Map<string, { status: "followed_path" | "deviated" | "still_deciding"; narrative_summary: string | null }>();
+
+    if (matchedIds.length > 0) {
+      try {
+        const { data: outcomesRows } = await serverClient
+          .from("session_outcomes")
+          .select("session_id, status, narrative_encrypted")
+          .in("session_id", matchedIds);
+
+        if (outcomesRows && outcomesRows.length > 0) {
+          const { decryptNarrative } = await import("./crypto");
+          for (const outcome of outcomesRows) {
+            let narrativeSummary: string | null = null;
+            if (outcome.narrative_encrypted) {
+              try {
+                narrativeSummary = decryptNarrative(outcome.narrative_encrypted);
+              } catch (decErr) {
+                console.warn("[O.D.I.N. Recall] Could not decrypt outcome narrative for", outcome.session_id);
+                narrativeSummary = null;
+              }
+            }
+            outcomesBySessionId.set(outcome.session_id, {
+              status: outcome.status,
+              narrative_summary: narrativeSummary,
+            });
+          }
+        }
+      } catch (outcomeFetchErr) {
+        console.warn("[O.D.I.N. Recall] Notice: Could not query session_outcomes:", outcomeFetchErr);
+      }
+    }
+
+    // 4. Format matches into clean PastContextItem envelopes for the Judge call
     return data.map((row: any) => ({
       id: row.id,
       date: row.created_at ? new Date(row.created_at).toISOString().split("T")[0] : "unknown",
       synthesis: row.synthesis || "",
+      outcome: outcomesBySessionId.get(row.id) || null,
       similarity: row.similarity ? Number(row.similarity.toFixed(3)) : undefined,
     }));
   } catch (err: unknown) {

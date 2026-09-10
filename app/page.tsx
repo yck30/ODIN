@@ -54,6 +54,29 @@ export default function JarvisDashboard() {
   const [dashboardMode, setDashboardMode] = useState<"intake" | "history">("intake");
   const [historicMetadata, setHistoricMetadata] = useState<{ id: string; created_at: string } | null>(null);
 
+  // Outcome feedback loop state (Milestones N2 & N3)
+  const [currentSessionOutcome, setCurrentSessionOutcome] = useState<{
+    id?: string;
+    status: "followed_path" | "deviated" | "still_deciding";
+    narrative?: string | null;
+    recorded_at?: string;
+  } | null>(null);
+
+  // Opportunistic Precedent Prompt state (FR-27)
+  const [opportunisticPrecedent, setOpportunisticPrecedent] = useState<{
+    id: string;
+    date: string;
+    core_objectives: string;
+    synthesis: string;
+    similarity?: number;
+  } | null>(null);
+
+  // Manual outcome modal state from deliverables panel (FR-30)
+  const [isOutcomeModalOpen, setIsOutcomeModalOpen] = useState(false);
+  const [modalOutcomeStatus, setModalOutcomeStatus] = useState<"followed_path" | "deviated" | "still_deciding">("followed_path");
+  const [modalOutcomeNarrative, setModalOutcomeNarrative] = useState("");
+  const [isSavingModalOutcome, setIsSavingModalOutcome] = useState(false);
+
   const fetchSessions = async (activeCode?: string) => {
     const code = activeCode || passcode || (typeof window !== "undefined" ? localStorage.getItem("odin_passcode") : "") || "";
     if (!code) return;
@@ -118,6 +141,7 @@ export default function JarvisDashboard() {
 
       setActiveSessionId(session.id);
       setHistoricMetadata({ id: session.id, created_at: session.created_at });
+      setCurrentSessionOutcome(session.outcome || null);
       setActiveTab("judge");
       setDashboardMode("intake");
 
@@ -268,13 +292,10 @@ export default function JarvisDashboard() {
     setAnalysisError("");
   };
 
-  const handleExecuteAnalysis = async () => {
-    if (!passcode) {
-      setAnalysisError("Security clearance required. Please authorize with a valid passcode above.");
-      return;
-    }
+  const runStreamingAnalysis = async () => {
     setAnalysisError("");
     setAnalysisResult(null);
+    setCurrentSessionOutcome(null);
     setAnalyzing(true);
     setAnalysisStage("Initializing cognitive personas...");
 
@@ -354,6 +375,103 @@ export default function JarvisDashboard() {
       setAnalysisError(err instanceof Error ? err.message : "Cognitive execution encountered an error.");
     } finally {
       setAnalyzing(false);
+    }
+  };
+
+  const handleExecuteAnalysis = async () => {
+    if (!passcode) {
+      setAnalysisError("Security clearance required. Please authorize with a valid passcode above.");
+      return;
+    }
+
+    // FR-27 Opportunistic Outcome Capture: Check for high-similarity precedent lacking an outcome
+    try {
+      const checkRes = await fetch("/api/recall/check", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          core_objectives: coreObjectives,
+          known_constraints: knownConstraints,
+        }),
+      });
+
+      if (checkRes.ok) {
+        const checkData = await checkRes.json();
+        if (checkData.pendingPrecedent) {
+          setOpportunisticPrecedent(checkData.pendingPrecedent);
+          return; // Pause flow to present 1-tap outcome question
+        }
+      }
+    } catch (checkErr) {
+      console.warn("Opportunistic pre-check notice:", checkErr);
+    }
+
+    await runStreamingAnalysis();
+  };
+
+  const handleOpportunisticDecision = async (status?: "followed_path" | "deviated" | "still_deciding") => {
+    const precedent = opportunisticPrecedent;
+    setOpportunisticPrecedent(null);
+
+    if (status && precedent) {
+      try {
+        const code = passcode || (typeof window !== "undefined" ? localStorage.getItem("odin_passcode") : "") || "";
+        await fetch(`/api/sessions/${precedent.id}/outcomes`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-odin-access-passcode": code,
+          },
+          body: JSON.stringify({
+            status,
+            prompted_via: "opportunistic",
+            passcode: code,
+          }),
+        });
+        fetchSessions();
+      } catch (e) {
+        console.warn("Could not save opportunistic outcome:", e);
+      }
+    }
+
+    await runStreamingAnalysis();
+  };
+
+  const handleSaveModalOutcome = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!activeSessionId) return;
+    setIsSavingModalOutcome(true);
+
+    try {
+      const code = passcode || (typeof window !== "undefined" ? localStorage.getItem("odin_passcode") : "") || "";
+      const res = await fetch(`/api/sessions/${activeSessionId}/outcomes`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-odin-access-passcode": code,
+        },
+        body: JSON.stringify({
+          status: modalOutcomeStatus,
+          narrative: modalOutcomeNarrative.trim(),
+          prompted_via: "manual",
+          passcode: code,
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setCurrentSessionOutcome({
+          status: data.outcome.status,
+          narrative: data.outcome.narrative,
+          recorded_at: data.outcome.recorded_at,
+        });
+        setIsOutcomeModalOpen(false);
+        fetchSessions();
+      }
+    } catch (err) {
+      console.error("Failed to save outcome from modal:", err);
+    } finally {
+      setIsSavingModalOutcome(false);
     }
   };
 
@@ -845,6 +963,107 @@ export default function JarvisDashboard() {
             </div>
           )}
 
+          {/* Outcome Feedback Bar (Milestone N2 / FR-30) */}
+          <div
+            style={{
+              padding: "0.75rem 1rem",
+              borderRadius: "8px",
+              marginBottom: "1.2rem",
+              background: currentSessionOutcome
+                ? currentSessionOutcome.status === "followed_path"
+                  ? "rgba(16, 185, 129, 0.08)"
+                  : currentSessionOutcome.status === "deviated"
+                  ? "rgba(245, 158, 11, 0.08)"
+                  : "rgba(59, 130, 246, 0.08)"
+                : "rgba(15, 23, 42, 0.4)",
+              border: `1px solid ${
+                currentSessionOutcome
+                  ? currentSessionOutcome.status === "followed_path"
+                    ? "rgba(16, 185, 129, 0.3)"
+                    : currentSessionOutcome.status === "deviated"
+                    ? "rgba(245, 158, 11, 0.3)"
+                    : "rgba(59, 130, 246, 0.3)"
+                  : "rgba(255, 255, 255, 0.08)"
+              }`,
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              flexWrap: "wrap",
+              gap: "0.75rem",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", flexWrap: "wrap" }}>
+              <span style={{ fontSize: "0.85rem" }}>
+                {currentSessionOutcome?.status === "followed_path"
+                  ? "✓"
+                  : currentSessionOutcome?.status === "deviated"
+                  ? "⚡"
+                  : currentSessionOutcome?.status === "still_deciding"
+                  ? "⏳"
+                  : "📝"}
+              </span>
+              <span className="font-mono" style={{ fontSize: "0.78rem", fontWeight: 700, color: "var(--text-primary)" }}>
+                REAL-WORLD OUTCOME:
+              </span>
+              {currentSessionOutcome ? (
+                <span
+                  className="font-mono"
+                  style={{
+                    fontSize: "0.72rem",
+                    padding: "0.15rem 0.5rem",
+                    borderRadius: "4px",
+                    fontWeight: 700,
+                    backgroundColor:
+                      currentSessionOutcome.status === "followed_path"
+                        ? "rgba(16, 185, 129, 0.2)"
+                        : currentSessionOutcome.status === "deviated"
+                        ? "rgba(245, 158, 11, 0.2)"
+                        : "rgba(59, 130, 246, 0.2)",
+                    color:
+                      currentSessionOutcome.status === "followed_path"
+                        ? "#34d399"
+                        : currentSessionOutcome.status === "deviated"
+                        ? "#fbbf24"
+                        : "#60a5fa",
+                  }}
+                >
+                  {currentSessionOutcome.status.toUpperCase().replace("_", " ")}
+                </span>
+              ) : (
+                <span className="font-mono" style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
+                  Pending real-world execution feedback
+                </span>
+              )}
+
+              {currentSessionOutcome?.narrative && (
+                <span
+                  style={{
+                    fontSize: "0.75rem",
+                    color: "var(--text-secondary)",
+                    fontStyle: "italic",
+                    marginLeft: "0.5rem",
+                  }}
+                >
+                  &quot;{currentSessionOutcome.narrative}&quot;
+                </span>
+              )}
+            </div>
+
+            {activeSessionId && (
+              <button
+                onClick={() => {
+                  setModalOutcomeStatus(currentSessionOutcome?.status || "followed_path");
+                  setModalOutcomeNarrative(currentSessionOutcome?.narrative || "");
+                  setIsOutcomeModalOpen(true);
+                }}
+                className="hud-button"
+                style={{ fontSize: "0.72rem", padding: "0.3rem 0.7rem", cursor: "pointer" }}
+              >
+                <span>{currentSessionOutcome ? "Edit Outcome" : "+ Record Outcome"}</span>
+              </button>
+            )}
+          </div>
+
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem", marginBottom: "1.5rem" }}>
             <div>
               <h2 className="font-display" style={{ fontSize: "1.3rem", color: "var(--accent-cyan)", letterSpacing: "0.06em" }}>
@@ -1262,6 +1481,264 @@ export default function JarvisDashboard() {
           </div>
         </section>
       </div>
+
+      {/* FR-27 Opportunistic Outcome Capture Prompt */}
+      {opportunisticPrecedent && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 9999,
+            backgroundColor: "rgba(3, 7, 18, 0.85)",
+            backdropFilter: "blur(8px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "1rem",
+          }}
+        >
+          <div
+            className="jarvis-card"
+            style={{
+              maxWidth: "520px",
+              width: "100%",
+              borderColor: "var(--accent-cyan)",
+              boxShadow: "0 0 35px rgba(0, 240, 255, 0.25)",
+              padding: "1.5rem",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginBottom: "0.8rem" }}>
+              <span style={{ fontSize: "1.2rem" }}>⚡</span>
+              <h3 className="font-display" style={{ fontSize: "1.1rem", color: "var(--accent-cyan)", letterSpacing: "0.05em" }}>
+                HISTORICAL PRECEDENT DETECTED
+              </h3>
+            </div>
+
+            <div
+              style={{
+                backgroundColor: "rgba(15, 23, 42, 0.6)",
+                border: "1px solid rgba(255, 255, 255, 0.08)",
+                borderRadius: "8px",
+                padding: "0.8rem",
+                marginBottom: "1rem",
+                fontSize: "0.8rem",
+              }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.3rem" }}>
+                <span className="font-mono" style={{ fontSize: "0.7rem", color: "var(--text-muted)" }}>
+                  SIMILAR PAST DECISION ({Math.round((opportunisticPrecedent.similarity || 0) * 100)}% MATCH):
+                </span>
+                <span className="font-mono" style={{ fontSize: "0.7rem", color: "var(--accent-cyan)" }}>
+                  {opportunisticPrecedent.date}
+                </span>
+              </div>
+              <div style={{ fontWeight: 600, color: "var(--text-primary)" }}>
+                &quot;{opportunisticPrecedent.core_objectives}&quot;
+              </div>
+            </div>
+
+            <p style={{ fontSize: "0.82rem", color: "var(--text-secondary)", marginBottom: "1.2rem", lineHeight: 1.5 }}>
+              Before synthesizing your new dilemma, did you follow the path recommended in this earlier decision? Recording your result enriches the Judge&apos;s outcome-weighting memory.
+            </p>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.5rem" }}>
+                <button
+                  onClick={() => handleOpportunisticDecision("followed_path")}
+                  className="hud-button"
+                  style={{
+                    fontSize: "0.75rem",
+                    padding: "0.6rem 0.4rem",
+                    textAlign: "center",
+                    backgroundColor: "rgba(16, 185, 129, 0.15)",
+                    borderColor: "rgba(16, 185, 129, 0.5)",
+                    color: "#34d399",
+                  }}
+                >
+                  ✓ Followed
+                </button>
+                <button
+                  onClick={() => handleOpportunisticDecision("deviated")}
+                  className="hud-button"
+                  style={{
+                    fontSize: "0.75rem",
+                    padding: "0.6rem 0.4rem",
+                    textAlign: "center",
+                    backgroundColor: "rgba(245, 158, 11, 0.15)",
+                    borderColor: "rgba(245, 158, 11, 0.5)",
+                    color: "#fbbf24",
+                  }}
+                >
+                  ⚡ Deviated
+                </button>
+                <button
+                  onClick={() => handleOpportunisticDecision("still_deciding")}
+                  className="hud-button"
+                  style={{
+                    fontSize: "0.75rem",
+                    padding: "0.6rem 0.4rem",
+                    textAlign: "center",
+                    backgroundColor: "rgba(59, 130, 246, 0.15)",
+                    borderColor: "rgba(59, 130, 246, 0.5)",
+                    color: "#60a5fa",
+                  }}
+                >
+                  ⏳ Deciding
+                </button>
+              </div>
+
+              <button
+                onClick={() => handleOpportunisticDecision(undefined)}
+                style={{
+                  marginTop: "0.4rem",
+                  padding: "0.5rem",
+                  background: "transparent",
+                  border: "none",
+                  color: "var(--text-muted)",
+                  fontSize: "0.75rem",
+                  fontFamily: "var(--font-mono)",
+                  cursor: "pointer",
+                  textAlign: "center",
+                }}
+              >
+                Skip for Now ✕ (Proceed directly to synthesis)
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Manual Outcome Modal (FR-30) */}
+      {isOutcomeModalOpen && activeSessionId && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 9999,
+            backgroundColor: "rgba(3, 7, 18, 0.85)",
+            backdropFilter: "blur(8px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "1rem",
+          }}
+        >
+          <div
+            className="jarvis-card"
+            style={{
+              maxWidth: "500px",
+              width: "100%",
+              borderColor: "var(--accent-cyan)",
+              padding: "1.5rem",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                <span>📝</span>
+                <h3 className="font-display" style={{ fontSize: "1.05rem", color: "var(--accent-cyan)" }}>
+                  RECORD DECISION OUTCOME
+                </h3>
+              </div>
+              <button
+                onClick={() => setIsOutcomeModalOpen(false)}
+                style={{ background: "transparent", border: "none", color: "var(--text-muted)", cursor: "pointer", fontSize: "1rem" }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveModalOutcome} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+              <div>
+                <label className="font-mono" style={{ fontSize: "0.75rem", color: "var(--accent-cyan)", display: "block", marginBottom: "0.4rem" }}>
+                  EXECUTION STATUS (REQUIRED)
+                </label>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.5rem" }}>
+                  <button
+                    type="button"
+                    onClick={() => setModalOutcomeStatus("followed_path")}
+                    className="hud-button"
+                    style={{
+                      fontSize: "0.75rem",
+                      padding: "0.5rem",
+                      backgroundColor: modalOutcomeStatus === "followed_path" ? "rgba(16, 185, 129, 0.25)" : undefined,
+                      borderColor: modalOutcomeStatus === "followed_path" ? "#34d399" : undefined,
+                      color: modalOutcomeStatus === "followed_path" ? "#34d399" : undefined,
+                    }}
+                  >
+                    ✓ Followed
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setModalOutcomeStatus("deviated")}
+                    className="hud-button"
+                    style={{
+                      fontSize: "0.75rem",
+                      padding: "0.5rem",
+                      backgroundColor: modalOutcomeStatus === "deviated" ? "rgba(245, 158, 11, 0.25)" : undefined,
+                      borderColor: modalOutcomeStatus === "deviated" ? "#fbbf24" : undefined,
+                      color: modalOutcomeStatus === "deviated" ? "#fbbf24" : undefined,
+                    }}
+                  >
+                    ⚡ Deviated
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setModalOutcomeStatus("still_deciding")}
+                    className="hud-button"
+                    style={{
+                      fontSize: "0.75rem",
+                      padding: "0.5rem",
+                      backgroundColor: modalOutcomeStatus === "still_deciding" ? "rgba(59, 130, 246, 0.25)" : undefined,
+                      borderColor: modalOutcomeStatus === "still_deciding" ? "#60a5fa" : undefined,
+                      color: modalOutcomeStatus === "still_deciding" ? "#60a5fa" : undefined,
+                    }}
+                  >
+                    ⏳ Deciding
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.3rem" }}>
+                  <label className="font-mono" style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>
+                    REFLECTIVE NARRATIVE & LESSONS (OPTIONAL)
+                  </label>
+                  <span className="font-mono" style={{ fontSize: "0.68rem", color: "var(--text-muted)" }}>
+                    🛡️ AES-256 Encrypted
+                  </span>
+                </div>
+                <textarea
+                  className="hud-textarea"
+                  rows={4}
+                  placeholder="What happened in reality? Did the strategic risks manifest? What would you do differently next time?"
+                  value={modalOutcomeNarrative}
+                  onChange={(e) => setModalOutcomeNarrative(e.target.value)}
+                />
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.5rem", marginTop: "0.5rem" }}>
+                <button
+                  type="button"
+                  onClick={() => setIsOutcomeModalOpen(false)}
+                  className="hud-button"
+                  style={{ fontSize: "0.75rem" }}
+                  disabled={isSavingModalOutcome}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="hud-button primary"
+                  style={{ fontSize: "0.75rem" }}
+                  disabled={isSavingModalOutcome}
+                >
+                  {isSavingModalOutcome ? "Saving..." : "Save Outcome"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

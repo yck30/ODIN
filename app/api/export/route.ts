@@ -50,6 +50,47 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: `Session ${sessionId} not found.` }, { status: 404 });
     }
 
+    const sessionIds = (data || []).map((row: any) => row.id);
+    const outcomesBySession = new Map<string, any>();
+
+    if (sessionIds.length > 0) {
+      const { data: outcomes } = await serverClient
+        .from("session_outcomes")
+        .select("session_id, status, narrative_encrypted, prompted_via, recorded_at")
+        .in("session_id", sessionIds);
+
+      if (outcomes) {
+        for (const outcome of outcomes) {
+          let outcomeNarrativeValue: string | null = null;
+          let outcomeEncryptedString = "";
+          if (outcome.narrative_encrypted) {
+            if (typeof outcome.narrative_encrypted === "string") {
+              outcomeEncryptedString = outcome.narrative_encrypted;
+            } else if (Buffer.isBuffer(outcome.narrative_encrypted)) {
+              outcomeEncryptedString = `\\x${outcome.narrative_encrypted.toString("hex")}`;
+            }
+          }
+
+          if (shouldDecrypt && outcomeEncryptedString) {
+            try {
+              outcomeNarrativeValue = decryptNarrative(outcomeEncryptedString);
+            } catch {
+              outcomeNarrativeValue = "[Decryption Failed: Key Mismatch]";
+            }
+          }
+
+          outcomesBySession.set(outcome.session_id, {
+            status: outcome.status,
+            prompted_via: outcome.prompted_via,
+            recorded_at: outcome.recorded_at,
+            ...(shouldDecrypt
+              ? { narrative: outcomeNarrativeValue }
+              : { narrative_encrypted: outcomeEncryptedString || null }),
+          });
+        }
+      }
+    }
+
     // Format into standard export shape independent of Supabase internal column layout
     const formattedSessions = (data || []).map((row: any) => {
       let narrativeValue: string | null = null;
@@ -85,6 +126,7 @@ export async function GET(req: NextRequest) {
           behaviorist: row.behaviorist_output,
           judge: row.judge_output,
         },
+        outcome: outcomesBySession.get(row.id) || null,
         metadata: {
           system: "O.D.I.N. Decision Support System",
           version: "1.2.0",

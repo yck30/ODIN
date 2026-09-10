@@ -8,6 +8,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Phase 2 Addendum Milestone N4 (N4) — Section 14 End-to-End QA Suite & $0 Cost Confirmation**:
+  - Implemented comprehensive automated test suite (`scripts/test-outcomes-qa.ts`) verifying all 5 Section 14 QA gates:
+    1. 4-path outcome recording test (`FOLLOWED_RECOMMENDATION`, `DEVIATED_FROM_RECOMMENDATION`, `STILL_DECIDING`, `CANCELLED_OR_SUPERSEDED`).
+    2. Zero-plaintext leakage audit in Supabase (raw database query verifies `narrative_encrypted` contains solely AES-256-GCM ciphertext).
+    3. Judge prompt outcome weighting integration test (verifies Judge receives outcome status and narrative summary and weighs historical success vs deviation).
+    4. Data export completeness test (validates both ciphertext privacy and decrypted portability via `x-odin-access-passcode`).
+    5. Cascading deletion test (`ON DELETE CASCADE` purges child outcome record upon session deletion).
+  - Re-confirmed $0 cost ceiling across all infrastructure (Gemini Flash free tier, Supabase free Postgres + pgvector, Vercel serverless, Web Speech API).
+- **Phase 2 Addendum Milestone N3 (N3) — Judge Semantic Retrieval Extension & Outcome-Aware Prompts**:
+  - Extended semantic retrieval pipeline (`lib/recall.ts`, `lib/engine/types.ts`) to query `session_outcomes` for matched past sessions and decrypt narratives server-side into `PastContextOutcome`.
+  - Amended `JUDGE_SYSTEM_PROMPT` and `formatJudgePrompt` (`lib/engine/prompts.ts`) per PRD v1.2 §20.7 with outcome-weighting directives (positive reinforcement for followed outcomes, pivot guidance and hazard warnings for deviated/adverse outcomes).
+  - Maintained persona blindness boundaries: The Quant, The Strategist, and The Behaviorist remain strictly unaware of past sessions or outcomes.
+  - Extended JSON export endpoint (`app/api/export/route.ts`) to join `session_outcomes` into exports per FR-31 (ciphertext by default, decrypted on demand with passcode).
+- **Phase 2 Addendum Milestone N2 (N2) — Opportunistic Outcome Capture & Manual Outcome Management UI**:
+  - Implemented opportunistic 1-tap outcome capture modal (`app/page.tsx`, FR-27) triggering prior to new session analysis when a high-similarity precedent (>= 0.65) lacks an outcome.
+  - Built pre-check API endpoint (`app/api/recall/check/route.ts`) to query past sessions without running redundant full intake.
+  - Built outcomes CRUD API route (`app/api/sessions/[id]/outcomes/route.ts`) with passcode protection, server-side AES-256-GCM encryption, and upsert handling.
+  - Added visual outcome badges (`✓ FOLLOWED PATH`, `⚡ DEVIATED`, `⏳ STILL DECIDING`, `+ LOG OUTCOME`) in `components/CaseHistoryDrawer.tsx`.
+  - Built manual outcome modal for logging/updating outcomes on historical sessions (FR-30) accessible from both `CaseHistoryDrawer` and the HUD deliverables panel.
+- **Phase 2 Addendum Milestone N1 (N1) — Database Schema Migration with RLS & App-Layer Encryption**:
+  - Created migration `scripts/migrations/02_create_session_outcomes.sql` defining `session_outcomes` table with 1-to-1 foreign key referencing `sessions(id)` and `ON DELETE CASCADE`.
+  - Enforced Row-Level Security (RLS) policies completely blocking public/anonymous REST access to outcomes.
+  - Implemented application-layer AES-256-GCM authenticated encryption for sensitive outcome narratives (`narrative_encrypted`).
+  - Created verification test script `scripts/test-outcomes.ts` validating RLS denial, round-trip encryption/decryption, and cascade deletion.
 - **Phase 2 Milestone 6 (M6) — Final Security QA, Hard Cutover & Streamlit Retirement**:
   - Archived legacy Phase 1 Streamlit application via annotated Git tag `phase-1-archive`.
   - Retired and purged deprecated Python Streamlit files (`src/`, `.streamlit/`, `list_models.py`, `requirements.txt`), completing the hard cutover to pure Next.js 15 App Router.
