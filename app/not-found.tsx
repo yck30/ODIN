@@ -3,7 +3,7 @@ import Link from "next/link";
 export default function NotFound() {
   return (
     <main className="app-container" style={{ textAlign: "center", paddingTop: "5rem" }}>
-      <div className="jarvis-card" style={{ maxWidth: "500px", margin: "0 auto" }}>
+      <div className="hud-card" style={{ maxWidth: "500px", margin: "0 auto" }}>
         <h1 className="font-display" style={{ fontSize: "3rem", color: "var(--accent-cyan)", marginBottom: "1rem" }}>
           404
         </h1>

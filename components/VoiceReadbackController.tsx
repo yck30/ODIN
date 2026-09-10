@@ -13,11 +13,19 @@ export default function VoiceReadbackController({ synthesis, nextActions }: Voic
 
   if (!isSupported) {
     return (
-      <div className="p-3 bg-slate-900/60 border border-slate-800 rounded-lg text-xs font-mono text-slate-500 flex items-center justify-between">
-        <span>Audio Readout: Web Speech API unsupported on this browser (typed-only fallback active).</span>
-        <span className="text-[10px] uppercase tracking-wider text-slate-600 border border-slate-700/60 px-1.5 py-0.5 rounded">
-          FR-14 Fallback
-        </span>
+      <div
+        className="hud-card"
+        style={{
+          padding: "0.85rem 1.1rem",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          fontSize: "0.75rem",
+          color: "var(--text-muted)",
+        }}
+      >
+        <span className="font-mono">Audio Readout: Web Speech API unsupported on this browser (typed-only fallback active).</span>
+        <span className="status-pill warning">FR-14 Fallback</span>
       </div>
     );
   }
@@ -35,75 +43,99 @@ export default function VoiceReadbackController({ synthesis, nextActions }: Voic
   };
 
   return (
-    <div className="p-3.5 bg-slate-950/80 border border-cyan-500/30 rounded-xl shadow-[0_0_20px_rgba(6,182,212,0.12)] flex flex-wrap items-center justify-between gap-3">
-      <div className="flex items-center gap-3">
-        {/* Equalizer / Speaker Icon */}
-        <div className="w-9 h-9 rounded-lg bg-cyan-950/80 border border-cyan-500/40 flex items-center justify-center text-cyan-400">
+    <div
+      className="hud-card"
+      style={{
+        padding: "1rem 1.25rem",
+        display: "flex",
+        flexWrap: "wrap",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: "1rem",
+        borderLeft: "3px solid var(--accent-cyan)",
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: "1rem", flex: "1 1 280px" }}>
+        {/* Animated Cybernetic Spectrum Visualizer / Speaker */}
+        <div
+          style={{
+            width: "42px",
+            height: "42px",
+            borderRadius: "10px",
+            background: "rgba(0, 240, 255, 0.08)",
+            border: "1px solid var(--border-medium)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            boxShadow: isSpeaking && !isPaused ? "var(--glow-cyan-sm)" : "none",
+            flexShrink: 0,
+          }}
+        >
           {isSpeaking && !isPaused ? (
-            <div className="flex items-end gap-0.5 h-4">
-              <span className="w-1 bg-cyan-400 animate-[eqBar1_0.8s_ease-in-out_infinite] rounded-full h-3"></span>
-              <span className="w-1 bg-cyan-300 animate-[eqBar2_0.6s_ease-in-out_infinite] rounded-full h-4"></span>
-              <span className="w-1 bg-cyan-400 animate-[eqBar3_0.9s_ease-in-out_infinite] rounded-full h-2"></span>
-              <span className="w-1 bg-cyan-300 animate-[eqBar1_0.7s_ease-in-out_infinite] rounded-full h-3.5"></span>
+            <div className="eq-spectrum">
+              <span className="eq-bar" />
+              <span className="eq-bar" />
+              <span className="eq-bar" />
+              <span className="eq-bar" />
+              <span className="eq-bar" />
+              <span className="eq-bar" />
+              <span className="eq-bar" />
             </div>
           ) : (
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg style={{ width: "18px", height: "18px", color: "var(--accent-cyan)" }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
             </svg>
           )}
         </div>
 
         <div>
-          <div className="text-xs font-mono font-semibold text-cyan-200 tracking-wide flex items-center gap-2">
-            JARVIS VOICE ARBITRATION READBACK
+          <div className="font-mono" style={{ fontSize: "0.82rem", fontWeight: 700, color: "var(--accent-cyan)", display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
+            <span>O.D.I.N. TACTICAL VOICE READBACK</span>
             {isSpeaking && !isPaused && (
-              <span className="inline-flex items-center px-1.5 py-0.2 rounded text-[9px] font-mono bg-cyan-900/60 text-cyan-300 border border-cyan-500/40 animate-pulse">
+              <span className="status-pill cyan" style={{ fontSize: "0.65rem", padding: "0.15rem 0.45rem" }}>
                 TRANSMITTING
               </span>
             )}
             {isPaused && (
-              <span className="inline-flex items-center px-1.5 py-0.2 rounded text-[9px] font-mono bg-amber-900/60 text-amber-300 border border-amber-500/40">
+              <span className="status-pill warning" style={{ fontSize: "0.65rem", padding: "0.15rem 0.45rem" }}>
                 PAUSED
               </span>
             )}
           </div>
-          <p className="text-[11px] font-mono text-slate-400">
+          <p className="font-mono" style={{ fontSize: "0.72rem", color: "var(--text-secondary)", marginTop: "0.2rem" }}>
             {isSpeaking
               ? isPaused
                 ? "Audio playback suspended. Click resume to continue."
                 : "Reading Judge synthesis and 3 sequenced next actions via Web Speech API."
-              : "Vocalize First Principles verdict & tactical action sequence."}
+              : "Synthesize First Principles verdict & tactical action sequence."}
           </p>
         </div>
       </div>
 
-      <div className="flex items-center gap-2">
+      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
         <button
           type="button"
           onClick={handleToggle}
-          className={`px-3.5 py-1.5 rounded-lg text-xs font-mono font-medium transition-all duration-200 flex items-center gap-2 border ${
-            isSpeaking && !isPaused
-              ? "bg-cyan-500/20 border-cyan-400 text-cyan-200 shadow-[0_0_12px_rgba(6,182,212,0.3)]"
-              : "bg-cyan-950/60 border-cyan-500/50 hover:bg-cyan-900/70 text-cyan-300 hover:border-cyan-400"
-          } active:scale-95 cursor-pointer`}
+          className={`hud-button ${isSpeaking && !isPaused ? "hud-button-primary" : ""}`}
+          style={{ minHeight: "38px" }}
         >
           {isSpeaking && !isPaused ? (
             <>
-              <svg className="w-3.5 h-3.5 text-cyan-400" fill="currentColor" viewBox="0 0 24 24">
+              <svg style={{ width: "14px", height: "14px" }} fill="currentColor" viewBox="0 0 24 24">
                 <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
               </svg>
               <span>Pause Readout</span>
             </>
           ) : isPaused ? (
             <>
-              <svg className="w-3.5 h-3.5 text-cyan-400" fill="currentColor" viewBox="0 0 24 24">
+              <svg style={{ width: "14px", height: "14px" }} fill="currentColor" viewBox="0 0 24 24">
                 <path d="M8 5v14l11-7z" />
               </svg>
               <span>Resume Readout</span>
             </>
           ) : (
             <>
-              <svg className="w-3.5 h-3.5 text-cyan-400" fill="currentColor" viewBox="0 0 24 24">
+              <svg style={{ width: "14px", height: "14px" }} fill="currentColor" viewBox="0 0 24 24">
                 <path d="M8 5v14l11-7z" />
               </svg>
               <span>Vocalize Verdict</span>
@@ -116,9 +148,11 @@ export default function VoiceReadbackController({ synthesis, nextActions }: Voic
             type="button"
             onClick={stop}
             aria-label="Stop audio readback"
-            className="px-2.5 py-1.5 rounded-lg text-xs font-mono bg-slate-900 border border-slate-700 hover:border-red-500/60 text-slate-400 hover:text-red-300 transition-all duration-150 active:scale-95 cursor-pointer"
+            className="hud-button hud-button-danger"
+            style={{ minHeight: "38px", padding: "0.6rem 0.8rem" }}
+            title="Stop audio readout"
           >
-            <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+            <svg style={{ width: "14px", height: "14px" }} fill="currentColor" viewBox="0 0 24 24">
               <path d="M6 6h12v12H6z" />
             </svg>
           </button>

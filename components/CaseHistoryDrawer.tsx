@@ -6,36 +6,34 @@ export interface SessionSummary {
   id: string;
   created_at: string;
   core_objectives: string;
-  known_constraints?: string;
   recommended_path: string;
   outcome_status?: "followed_path" | "deviated" | "still_deciding" | null;
-  prompted_via?: "opportunistic" | "manual" | null;
 }
 
 interface CaseHistoryDrawerProps {
   sessions: SessionSummary[];
-  loading: boolean;
-  isWaking: boolean;
+  activeSessionId: string | null;
   onSelectSession: (id: string) => void;
-  onDeleteSession: (id: string) => Promise<void>;
   onRefresh: () => void;
-  activeSessionId?: string | null;
+  onDeleteSession: (id: string) => Promise<void>;
+  loading?: boolean;
+  isWaking?: boolean;
 }
 
 export default function CaseHistoryDrawer({
   sessions,
-  loading,
-  isWaking,
-  onSelectSession,
-  onDeleteSession,
-  onRefresh,
   activeSessionId,
+  onSelectSession,
+  onRefresh,
+  onDeleteSession,
+  loading = false,
+  isWaking = false,
 }: CaseHistoryDrawerProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
-  // Outcome edit state (FR-30)
+  // Manual Outcome Editor Modal State (FR-30)
   const [editingOutcomeSession, setEditingOutcomeSession] = useState<SessionSummary | null>(null);
   const [outcomeStatus, setOutcomeStatus] = useState<"followed_path" | "deviated" | "still_deciding">("followed_path");
   const [outcomeNarrative, setOutcomeNarrative] = useState("");
@@ -95,6 +93,7 @@ export default function CaseHistoryDrawer({
   const handleSaveOutcome = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingOutcomeSession) return;
+
     setSavingOutcome(true);
     setOutcomeError(null);
 
@@ -129,31 +128,38 @@ export default function CaseHistoryDrawer({
   };
 
   return (
-    <div className="flex flex-col gap-4">
-      {/* Search & Utility Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-slate-950/60 border border-slate-800 rounded-xl">
-        <div className="flex items-center gap-2 flex-1 min-w-[240px]">
-          <span className="text-slate-500 text-sm font-mono">🔍</span>
+    <div className="hud-drawer-container">
+      {/* Search & Utility Toolbar */}
+      <div className="hud-search-bar">
+        <div className="hud-search-input-group">
+          <span style={{ fontSize: "0.9rem" }}>🔍</span>
           <input
             type="text"
-            placeholder="Search past cases by objective, verdict, outcome, or date..."
+            placeholder="Search cases by objective, verdict, outcome, or date..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-transparent text-xs font-mono text-slate-200 placeholder-slate-500 focus:outline-none"
+            className="hud-search-input"
           />
           {searchTerm && (
             <button
               onClick={() => setSearchTerm("")}
-              className="text-slate-500 hover:text-slate-300 text-xs font-mono px-1.5"
+              style={{
+                background: "transparent",
+                border: "none",
+                color: "var(--text-muted)",
+                cursor: "pointer",
+                fontSize: "0.85rem",
+                padding: "0 0.3rem",
+              }}
             >
               ✕
             </button>
           )}
         </div>
 
-        <div className="flex items-center gap-2">
-          <span className="text-[11px] font-mono text-slate-400">
-            {filteredSessions.length} {filteredSessions.length === 1 ? "Case" : "Cases"} Archived
+        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
+          <span className="font-mono" style={{ fontSize: "0.72rem", color: "var(--text-secondary)" }}>
+            {filteredSessions.length} {filteredSessions.length === 1 ? "Case" : "Cases"}
           </span>
 
           <button
@@ -163,10 +169,11 @@ export default function CaseHistoryDrawer({
               window.open(`/api/export?decrypt=true&passcode=${encodeURIComponent(code)}`, "_blank");
             }}
             disabled={loading || filteredSessions.length === 0}
-            className="px-2.5 py-1 text-xs font-mono rounded bg-slate-900 border border-slate-700 hover:border-cyan-500/80 text-cyan-300 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+            className="hud-button"
+            style={{ fontSize: "0.72rem", padding: "0.3rem 0.65rem", minHeight: "34px" }}
             title="Export all archived sessions as portable human-readable JSON (FR-25 & FR-31)"
           >
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg style={{ width: "13px", height: "13px" }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
             </svg>
             <span>Export Decrypted</span>
@@ -179,10 +186,11 @@ export default function CaseHistoryDrawer({
               window.open(`/api/export?passcode=${encodeURIComponent(code)}`, "_blank");
             }}
             disabled={loading || filteredSessions.length === 0}
-            className="px-2.5 py-1 text-xs font-mono rounded bg-slate-900 border border-slate-700 hover:border-slate-500 text-slate-400 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+            className="hud-button"
+            style={{ fontSize: "0.72rem", padding: "0.3rem 0.65rem", minHeight: "34px", color: "var(--text-secondary)" }}
             title="Export all sessions with narrative encrypted (Safe Backup)"
           >
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg style={{ width: "13px", height: "13px" }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
             </svg>
             <span>Backup Ciphertext</span>
@@ -191,11 +199,16 @@ export default function CaseHistoryDrawer({
           <button
             onClick={onRefresh}
             disabled={loading}
-            className="p-1.5 text-xs font-mono rounded bg-slate-900 border border-slate-700 hover:border-slate-600 text-slate-300 transition-all disabled:opacity-50 cursor-pointer"
+            className="hud-button"
+            style={{ minHeight: "34px", padding: "0.3rem 0.6rem" }}
             title="Refresh Archive"
           >
             <svg
-              className={`w-3.5 h-3.5 ${loading ? "animate-spin text-cyan-400" : ""}`}
+              style={{
+                width: "14px",
+                height: "14px",
+                animation: loading ? "pulseGlow 1s linear infinite" : "none",
+              }}
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -208,11 +221,23 @@ export default function CaseHistoryDrawer({
 
       {/* Supabase Free-Tier Cold-Start Waking Alert (PRD §21.2) */}
       {isWaking && (
-        <div className="flex items-center gap-3 p-3 bg-amber-950/40 border border-amber-500/40 rounded-xl text-amber-300 text-xs font-mono animate-pulse">
-          <span className="text-base">⏳</span>
-          <div className="flex-1">
-            <span className="font-bold">Waking the archive…</span>
-            <p className="text-[11px] text-amber-400/80 mt-0.5">
+        <div
+          className="hud-card"
+          style={{
+            borderColor: "var(--accent-amber)",
+            background: "rgba(245, 158, 11, 0.08)",
+            display: "flex",
+            alignItems: "center",
+            gap: "0.75rem",
+            padding: "0.85rem 1.15rem",
+          }}
+        >
+          <span style={{ fontSize: "1.2rem" }}>⏳</span>
+          <div style={{ flex: 1 }}>
+            <span className="font-mono" style={{ fontSize: "0.82rem", fontWeight: 700, color: "var(--accent-amber)" }}>
+              Waking the archive…
+            </span>
+            <p className="font-mono" style={{ fontSize: "0.72rem", color: "rgba(245, 158, 11, 0.85)", marginTop: "0.2rem" }}>
               Supabase free-tier database is spinning up after inactivity. Case dossiers will load momentarily.
             </p>
           </div>
@@ -221,28 +246,37 @@ export default function CaseHistoryDrawer({
 
       {/* Loading Skeleton */}
       {loading && !isWaking && (
-        <div className="flex flex-col gap-3 py-6 items-center justify-center text-slate-500 font-mono text-xs">
-          <div className="w-6 h-6 border-2 border-cyan-500/40 border-t-cyan-400 rounded-full animate-spin" />
-          <span>Scanning persistent case records…</span>
+        <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", padding: "2rem 0", alignItems: "center", justifyContent: "center" }}>
+          <div className="pulse-dot cyan" style={{ width: "12px", height: "12px" }} />
+          <span className="font-mono" style={{ fontSize: "0.78rem", color: "var(--text-secondary)" }}>
+            Scanning persistent case records…
+          </span>
         </div>
       )}
 
       {/* Empty State */}
       {!loading && filteredSessions.length === 0 && (
-        <div className="p-8 border border-dashed border-slate-800 rounded-xl text-center font-mono">
-          <span className="text-2xl mb-2 block">📂</span>
-          <p className="text-slate-400 text-xs font-semibold">
+        <div
+          className="hud-card"
+          style={{
+            borderStyle: "dashed",
+            padding: "2.5rem 1.5rem",
+            textAlign: "center",
+          }}
+        >
+          <span style={{ fontSize: "1.8rem", display: "block", marginBottom: "0.5rem" }}>📂</span>
+          <p className="font-mono" style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--text-primary)" }}>
             {searchTerm ? "No archived decisions match your query." : "No decision cases stored yet."}
           </p>
-          <p className="text-slate-600 text-[11px] mt-1">
+          <p className="font-mono" style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginTop: "0.3rem" }}>
             {searchTerm ? "Try searching by another keyword or clear the search filter." : "Synthesize a decision in the intake console to establish your first persistent case record."}
           </p>
         </div>
       )}
 
-      {/* Session Cards List */}
+      {/* Session Dossier Cards List */}
       {!loading && filteredSessions.length > 0 && (
-        <div className="grid grid-cols-1 gap-3">
+        <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
           {filteredSessions.map((session) => {
             const isSelected = activeSessionId === session.id;
             const isDeleting = deletingId === session.id;
@@ -255,77 +289,88 @@ export default function CaseHistoryDrawer({
             return (
               <div
                 key={session.id}
-                className={`p-4 rounded-xl border transition-all duration-200 ${
-                  isSelected
-                    ? "bg-cyan-950/40 border-cyan-400/80 shadow-[0_0_16px_rgba(6,182,212,0.2)]"
-                    : "bg-slate-900/40 border-slate-800 hover:border-slate-700 hover:bg-slate-900/60"
-                }`}
+                className={`hud-dossier-card ${isSelected ? "active" : ""}`}
               >
-                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                      <span className="text-[10px] font-mono text-slate-400 bg-slate-800/80 px-2 py-0.5 rounded border border-slate-700/60">
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "0.75rem" }}>
+                  <div style={{ flex: "1 1 300px", minWidth: 0 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.45rem", flexWrap: "wrap" }}>
+                      <span className="status-pill cyan" style={{ fontSize: "0.68rem", padding: "0.15rem 0.5rem" }}>
                         {formattedDate}
                       </span>
                       {isSelected && (
-                        <span className="text-[10px] font-mono text-cyan-300 bg-cyan-900/60 border border-cyan-500/50 px-2 py-0.5 rounded animate-pulse">
+                        <span className="status-pill online" style={{ fontSize: "0.68rem", padding: "0.15rem 0.5rem" }}>
                           ACTIVE INSPECTION
                         </span>
                       )}
 
-                      {/* Outcome Status Badge (FR-28, FR-30) */}
+                      {/* Outcome Status Badges */}
                       {session.outcome_status === "followed_path" && (
-                        <span className="text-[10px] font-mono text-emerald-300 bg-emerald-950/60 border border-emerald-500/50 px-2 py-0.5 rounded flex items-center gap-1">
-                          <span>✓</span> FOLLOWED PATH
+                        <span className="status-pill online" style={{ fontSize: "0.68rem", padding: "0.15rem 0.5rem" }}>
+                          ✓ FOLLOWED PATH
                         </span>
                       )}
                       {session.outcome_status === "deviated" && (
-                        <span className="text-[10px] font-mono text-amber-300 bg-amber-950/60 border border-amber-500/50 px-2 py-0.5 rounded flex items-center gap-1">
-                          <span>⚡</span> DEVIATED
+                        <span className="status-pill warning" style={{ fontSize: "0.68rem", padding: "0.15rem 0.5rem" }}>
+                          ⚡ DEVIATED
                         </span>
                       )}
                       {session.outcome_status === "still_deciding" && (
-                        <span className="text-[10px] font-mono text-blue-300 bg-blue-950/60 border border-blue-500/50 px-2 py-0.5 rounded flex items-center gap-1">
-                          <span>⏳</span> STILL DECIDING
+                        <span className="status-pill cyan" style={{ fontSize: "0.68rem", padding: "0.15rem 0.5rem" }}>
+                          ⏳ STILL DECIDING
                         </span>
                       )}
                       {!session.outcome_status && (
                         <button
                           onClick={(e) => handleOpenOutcomeEditor(session, e)}
-                          className="text-[10px] font-mono text-slate-400 hover:text-cyan-300 bg-slate-800/60 hover:bg-slate-800 border border-dashed border-slate-700 hover:border-cyan-500/50 px-2 py-0.5 rounded transition-all cursor-pointer"
+                          className="hud-button"
+                          style={{
+                            fontSize: "0.68rem",
+                            padding: "0.15rem 0.5rem",
+                            minHeight: "26px",
+                            borderStyle: "dashed",
+                          }}
                           title="Record what actually happened after this decision (FR-30)"
                         >
                           + LOG OUTCOME
                         </button>
                       )}
 
-                      <span className="text-[10px] font-mono text-slate-500 truncate max-w-[120px]">
+                      <span className="font-mono" style={{ fontSize: "0.7rem", color: "var(--text-muted)" }}>
                         ID: {session.id.slice(0, 8)}...
                       </span>
                     </div>
 
-                    <h4 className="font-semibold text-sm text-slate-200 line-clamp-2 mb-1.5">
+                    <h4 style={{ fontSize: "0.92rem", fontWeight: 600, color: "var(--text-primary)", marginBottom: "0.45rem", lineHeight: 1.4 }}>
                       {session.core_objectives}
                     </h4>
 
                     {/* Recommended Verdict Snippet */}
-                    <div className="flex items-start gap-1.5 text-xs font-mono text-cyan-300/90 bg-cyan-950/30 border border-cyan-500/20 px-2.5 py-1.5 rounded-lg">
-                      <span className="text-cyan-400 font-bold shrink-0">VERDICT:</span>
-                      <span className="italic line-clamp-2">&quot;{session.recommended_path}&quot;</span>
+                    <div
+                      style={{
+                        fontSize: "0.78rem",
+                        fontFamily: "var(--font-mono)",
+                        color: "var(--accent-cyan)",
+                        background: "rgba(0, 240, 255, 0.05)",
+                        border: "1px solid rgba(0, 240, 255, 0.2)",
+                        padding: "0.45rem 0.75rem",
+                        borderRadius: "6px",
+                        display: "flex",
+                        gap: "0.4rem",
+                      }}
+                    >
+                      <strong style={{ color: "var(--accent-cyan)" }}>VERDICT:</strong>
+                      <span style={{ fontStyle: "italic", color: "var(--text-primary)" }}>&quot;{session.recommended_path}&quot;</span>
                     </div>
                   </div>
 
                   {/* Actions Bar */}
-                  <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-2 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-800/60">
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", flexWrap: "wrap" }}>
                     <button
                       onClick={() => onSelectSession(session.id)}
-                      className={`px-3 py-1.5 text-xs font-mono font-medium rounded-lg border transition-all duration-150 flex items-center gap-1.5 ${
-                        isSelected
-                          ? "bg-cyan-500 text-slate-950 border-cyan-400 font-bold shadow-[0_0_12px_rgba(6,182,212,0.4)]"
-                          : "bg-cyan-950/60 text-cyan-300 border-cyan-500/40 hover:bg-cyan-900/80 hover:border-cyan-400"
-                      } active:scale-95 cursor-pointer`}
+                      className={`hud-button ${isSelected ? "hud-button-primary" : ""}`}
+                      style={{ fontSize: "0.75rem", padding: "0.4rem 0.8rem", minHeight: "34px" }}
                     >
-                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <svg style={{ width: "13px", height: "13px" }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                       </svg>
@@ -335,27 +380,30 @@ export default function CaseHistoryDrawer({
                     {/* Manage Outcome Button (FR-30) */}
                     <button
                       onClick={(e) => handleOpenOutcomeEditor(session, e)}
-                      className="px-2.5 py-1 text-[11px] font-mono rounded bg-slate-900/80 border border-slate-700 hover:border-slate-500 text-slate-300 hover:text-cyan-300 transition-all cursor-pointer flex items-center gap-1"
+                      className="hud-button"
+                      style={{ fontSize: "0.72rem", padding: "0.4rem 0.65rem", minHeight: "34px", color: "var(--text-secondary)" }}
                     >
                       <span>📝</span>
                       <span>{session.outcome_status ? "Edit Outcome" : "Log Outcome"}</span>
                     </button>
 
                     {isConfirming ? (
-                      <div className="flex items-center gap-1.5">
+                      <div style={{ display: "flex", alignItems: "center", gap: "0.3rem" }}>
                         <button
                           onClick={(e) => handleDelete(session.id, e)}
                           disabled={isDeleting}
-                          className="px-2 py-1 text-[11px] font-mono bg-red-900/80 text-red-200 border border-red-600 rounded hover:bg-red-800 active:scale-95 cursor-pointer"
+                          className="hud-button hud-button-danger"
+                          style={{ fontSize: "0.72rem", padding: "0.35rem 0.65rem", minHeight: "34px" }}
                         >
-                          {isDeleting ? "Purging…" : "Confirm Hard Delete"}
+                          {isDeleting ? "Purging…" : "Confirm Delete"}
                         </button>
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
                             setConfirmDeleteId(null);
                           }}
-                          className="px-1.5 py-1 text-[11px] font-mono text-slate-400 hover:text-slate-200 cursor-pointer"
+                          className="hud-button"
+                          style={{ fontSize: "0.72rem", padding: "0.35rem 0.5rem", minHeight: "34px", color: "var(--text-muted)" }}
                         >
                           Cancel
                         </button>
@@ -368,7 +416,14 @@ export default function CaseHistoryDrawer({
                         }}
                         aria-label="Delete past session"
                         title="Purge session permanently from Supabase (FR-21)"
-                        className="px-2 py-1 text-[11px] font-mono text-slate-500 hover:text-red-400 hover:bg-red-950/30 rounded border border-transparent hover:border-red-900/50 transition-all cursor-pointer"
+                        className="hud-button"
+                        style={{
+                          fontSize: "0.72rem",
+                          padding: "0.35rem 0.6rem",
+                          minHeight: "34px",
+                          color: "var(--text-muted)",
+                          borderColor: "transparent",
+                        }}
                       >
                         Delete
                       </button>
@@ -383,69 +438,78 @@ export default function CaseHistoryDrawer({
 
       {/* Manual Outcome Modal (FR-30) */}
       {editingOutcomeSession && (
-        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-950 border border-cyan-500/40 rounded-2xl max-w-lg w-full p-5 shadow-[0_0_30px_rgba(6,182,212,0.2)] font-mono">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
-              <div className="flex items-center gap-2">
-                <span className="text-cyan-400">📝</span>
-                <h3 className="text-sm font-bold text-slate-200 uppercase tracking-wider">
-                  {editingOutcomeSession.outcome_status ? "Edit Decision Outcome" : "Record Decision Outcome"}
+        <div className="hud-modal-backdrop">
+          <div className="hud-modal-card">
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                <span>📝</span>
+                <h3 className="font-display" style={{ fontSize: "1.05rem", color: "var(--accent-cyan)", letterSpacing: "0.05em" }}>
+                  {editingOutcomeSession.outcome_status ? "EDIT DECISION OUTCOME" : "RECORD DECISION OUTCOME"}
                 </h3>
               </div>
               <button
                 onClick={() => setEditingOutcomeSession(null)}
-                className="text-slate-500 hover:text-slate-300 text-sm px-2 cursor-pointer"
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  color: "var(--text-muted)",
+                  cursor: "pointer",
+                  fontSize: "1.1rem",
+                }}
               >
                 ✕
               </button>
             </div>
 
-            <div className="text-xs text-slate-400 mb-3 bg-slate-900/60 p-2.5 rounded-lg border border-slate-800">
-              <span className="text-slate-500 block text-[10px] uppercase">Decision Objective:</span>
-              <span className="text-slate-200 font-semibold">{editingOutcomeSession.core_objectives}</span>
+            <div
+              style={{
+                fontSize: "0.78rem",
+                color: "var(--text-secondary)",
+                background: "rgba(10, 18, 42, 0.8)",
+                border: "1px solid var(--border-subtle)",
+                borderRadius: "8px",
+                padding: "0.75rem",
+                marginBottom: "1rem",
+              }}
+            >
+              <span className="font-mono" style={{ fontSize: "0.68rem", color: "var(--text-muted)", display: "block", marginBottom: "0.2rem" }}>
+                DECISION OBJECTIVE:
+              </span>
+              <span style={{ color: "var(--text-primary)", fontWeight: 600 }}>{editingOutcomeSession.core_objectives}</span>
             </div>
 
             {loadingOutcomeDetails ? (
-              <div className="py-8 text-center text-xs text-slate-500 animate-pulse">
+              <div style={{ textAlign: "center", padding: "2rem 0", color: "var(--text-muted)", fontSize: "0.8rem" }} className="font-mono">
                 Decrypting existing outcome details...
               </div>
             ) : (
-              <form onSubmit={handleSaveOutcome} className="flex flex-col gap-4">
+              <form onSubmit={handleSaveOutcome} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
                 <div>
-                  <label className="block text-[11px] text-cyan-300 uppercase tracking-wider mb-1.5 font-bold">
-                    Execution Status (Required)
+                  <label className="font-mono" style={{ fontSize: "0.72rem", color: "var(--accent-cyan)", display: "block", marginBottom: "0.4rem", fontWeight: 700 }}>
+                    EXECUTION STATUS (REQUIRED)
                   </label>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: "0.5rem" }}>
                     <button
                       type="button"
                       onClick={() => setOutcomeStatus("followed_path")}
-                      className={`p-2 rounded-lg border text-xs font-mono transition-all cursor-pointer ${
-                        outcomeStatus === "followed_path"
-                          ? "bg-emerald-950/80 border-emerald-500 text-emerald-300 font-bold shadow-[0_0_10px_rgba(16,185,129,0.3)]"
-                          : "bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700"
-                      }`}
+                      className={`hud-button ${outcomeStatus === "followed_path" ? "hud-button-success" : ""}`}
+                      style={{ fontSize: "0.75rem", minHeight: "42px" }}
                     >
                       ✓ Followed Path
                     </button>
                     <button
                       type="button"
                       onClick={() => setOutcomeStatus("deviated")}
-                      className={`p-2 rounded-lg border text-xs font-mono transition-all cursor-pointer ${
-                        outcomeStatus === "deviated"
-                          ? "bg-amber-950/80 border-amber-500 text-amber-300 font-bold shadow-[0_0_10px_rgba(245,158,11,0.3)]"
-                          : "bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700"
-                      }`}
+                      className={`hud-button ${outcomeStatus === "deviated" ? "hud-button-warning" : ""}`}
+                      style={{ fontSize: "0.75rem", minHeight: "42px" }}
                     >
                       ⚡ Deviated
                     </button>
                     <button
                       type="button"
                       onClick={() => setOutcomeStatus("still_deciding")}
-                      className={`p-2 rounded-lg border text-xs font-mono transition-all cursor-pointer ${
-                        outcomeStatus === "still_deciding"
-                          ? "bg-blue-950/80 border-blue-500 text-blue-300 font-bold shadow-[0_0_10px_rgba(59,130,246,0.3)]"
-                          : "bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700"
-                      }`}
+                      className={`hud-button ${outcomeStatus === "still_deciding" ? "hud-button-primary" : ""}`}
+                      style={{ fontSize: "0.75rem", minHeight: "42px" }}
                     >
                       ⏳ Still Deciding
                     </button>
@@ -453,40 +517,52 @@ export default function CaseHistoryDrawer({
                 </div>
 
                 <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="text-[11px] text-slate-400 uppercase tracking-wider">
-                      Reflection Narrative (Optional)
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.35rem" }}>
+                    <label className="font-mono" style={{ fontSize: "0.72rem", color: "var(--text-secondary)" }}>
+                      REFLECTION NARRATIVE (OPTIONAL)
                     </label>
-                    <span className="text-[10px] text-slate-500">🛡️ AES-256 Encrypted</span>
+                    <span className="font-mono" style={{ fontSize: "0.68rem", color: "var(--text-muted)" }}>🛡️ AES-256 Encrypted</span>
                   </div>
                   <textarea
                     rows={4}
-                    placeholder="What actually occurred? Did the recommended strategy yield expected results, or were there unforeseen surprises?"
+                    placeholder="What actually occurred? Did the strategy yield expected outcomes, or were there unforeseen roadblocks?"
                     value={outcomeNarrative}
                     onChange={(e) => setOutcomeNarrative(e.target.value)}
-                    className="w-full bg-slate-900/80 border border-slate-800 rounded-xl p-3 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-cyan-500/80 font-mono"
+                    className="hud-textarea"
                   />
                 </div>
 
                 {outcomeError && (
-                  <div className="p-2.5 rounded bg-rose-950/50 border border-rose-600/50 text-rose-300 text-xs">
+                  <div
+                    className="font-mono"
+                    style={{
+                      fontSize: "0.75rem",
+                      color: "#fda4af",
+                      background: "rgba(244, 63, 94, 0.12)",
+                      border: "1px solid var(--accent-rose)",
+                      borderRadius: "6px",
+                      padding: "0.6rem 0.8rem",
+                    }}
+                  >
                     {outcomeError}
                   </div>
                 )}
 
-                <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
+                <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: "0.5rem", paddingTop: "0.5rem", borderTop: "1px solid var(--border-subtle)" }}>
                   <button
                     type="button"
                     onClick={() => setEditingOutcomeSession(null)}
                     disabled={savingOutcome}
-                    className="px-3 py-1.5 rounded-lg border border-slate-800 hover:bg-slate-900 text-slate-400 text-xs cursor-pointer"
+                    className="hud-button"
+                    style={{ minHeight: "38px" }}
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={savingOutcome}
-                    className="px-4 py-1.5 rounded-lg bg-cyan-500 text-slate-950 font-bold text-xs hover:bg-cyan-400 active:scale-95 transition-all shadow-[0_0_15px_rgba(6,182,212,0.4)] cursor-pointer disabled:opacity-50"
+                    className="hud-button hud-button-primary"
+                    style={{ minHeight: "38px" }}
                   >
                     {savingOutcome ? "Encrypting & Storing…" : "Save Outcome"}
                   </button>

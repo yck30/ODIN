@@ -1,53 +1,71 @@
 /* ==========================================================================
-   O.D.I.N. Design System & Tokens (Phase 2 — JARVIS Interface)
-   Informed by: Impeccable, Emil Design Eng, Apple Fluid Motion
+   O.D.I.N. Design System & Cybernetic HUD Tokens (Phase 2)
+   Design Direction: Out-of-distribution craft, cybernetic tactical HUD,
+   Apple fluid motion, Emil Kowalski snappy physics, holographic glassmorphism.
+   Strictly $0 runtime overhead — pure Vanilla CSS.
    ========================================================================== */
 
 :root {
-  /* Color Palette - Deep Space & Electric Cyan HUD */
-  --bg-deep: #050811;
-  --bg-surface: rgba(10, 17, 36, 0.72);
-  --bg-surface-hover: rgba(16, 26, 54, 0.85);
-  --bg-surface-active: rgba(22, 38, 77, 0.95);
-  --bg-card: rgba(13, 21, 45, 0.6);
+  /* Color Palette - Deep Obsidian & Laser Accents */
+  --bg-deep: #030712;
+  --bg-surface: rgba(8, 15, 35, 0.78);
+  --bg-surface-hover: rgba(14, 25, 55, 0.88);
+  --bg-surface-active: rgba(20, 36, 78, 0.95);
+  --bg-card: rgba(10, 18, 42, 0.65);
   --bg-card-subtle: rgba(255, 255, 255, 0.02);
+  --bg-glass-modal: rgba(4, 8, 22, 0.92);
 
-  --border-subtle: rgba(56, 189, 248, 0.12);
-  --border-medium: rgba(56, 189, 248, 0.28);
-  --border-glow: rgba(0, 240, 255, 0.45);
-
+  /* Cybernetic Neon Accents */
   --accent-cyan: #00f0ff;
-  --accent-cyan-dim: rgba(0, 240, 255, 0.15);
+  --accent-cyan-glow: rgba(0, 240, 255, 0.5);
+  --accent-cyan-dim: rgba(0, 240, 255, 0.12);
   --accent-blue: #38bdf8;
   --accent-indigo: #6366f1;
+  --accent-violet: #8b5cf6;
   --accent-emerald: #10b981;
   --accent-amber: #f59e0b;
   --accent-rose: #f43f5e;
 
-  --text-primary: #f1f5f9;
+  /* Hairline Borders with Subtle Neon Luminescence */
+  --border-subtle: rgba(56, 189, 248, 0.14);
+  --border-medium: rgba(0, 240, 255, 0.32);
+  --border-glow: rgba(0, 240, 255, 0.6);
+  --border-amber: rgba(245, 158, 11, 0.4);
+  --border-emerald: rgba(16, 185, 129, 0.4);
+
+  /* High-Contrast Typography */
+  --text-primary: #f8fafc;
   --text-secondary: #94a3b8;
   --text-muted: #64748b;
   --text-cyan: #38bdf8;
+  --text-dim: #475569;
 
-  /* Typography */
+  /* Font Families */
   --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-mono: "JetBrains Mono", "Fira Code", monospace;
   --font-display: "Orbitron", var(--font-sans);
 
-  /* Animation Easings & Durations (Emil Kowalski specification) */
+  /* Motion & Spring Mechanics (Emil Kowalski / Apple WWDC) */
   --ease-out-snappy: cubic-bezier(0.23, 1, 0.32, 1);
   --ease-in-out-smooth: cubic-bezier(0.77, 0, 0.175, 1);
-  --duration-fast: 160ms;
-  --duration-normal: 240ms;
-  --duration-slow: 400ms;
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --duration-instant: 100ms;
+  --duration-fast: 180ms;
+  --duration-normal: 260ms;
+  --duration-slow: 420ms;
 
-  /* Glassmorphic Shadows & Glows */
-  --glow-cyan: 0 0 24px rgba(0, 240, 255, 0.18);
-  --glow-cyan-sm: 0 0 12px rgba(0, 240, 255, 0.28);
-  --shadow-surface: 0 12px 36px -8px rgba(0, 0, 0, 0.6);
+  /* Volumetric Cybernetic Glows */
+  --glow-cyan: 0 0 28px rgba(0, 240, 255, 0.22);
+  --glow-cyan-sm: 0 0 14px rgba(0, 240, 255, 0.35);
+  --glow-cyan-lg: 0 0 45px rgba(0, 240, 255, 0.35);
+  --glow-amber-sm: 0 0 14px rgba(245, 158, 11, 0.35);
+  --glow-emerald-sm: 0 0 14px rgba(16, 185, 129, 0.35);
+  --shadow-surface: 0 16px 40px -10px rgba(0, 0, 0, 0.7);
 }
 
-/* Reset & Baseline */
+/* ==========================================================================
+   Reset & Viewport Foundation
+   ========================================================================== */
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
@@ -65,18 +83,36 @@ html, body {
   position: relative;
 }
 
-/* Ambient Radial Glow & Grid Background */
+/* Cybernetic Animated Background: Dual Radial Glows & Micro-Grid */
 body::before {
   content: "";
   position: fixed;
-  top: 0;
+  top: -120px;
   left: 50%;
   transform: translateX(-50%);
-  width: 1000px;
-  height: 500px;
-  background: radial-gradient(circle at 50% 0%, rgba(0, 240, 255, 0.12) 0%, rgba(99, 102, 241, 0.05) 50%, transparent 80%);
+  width: 1200px;
+  height: 600px;
+  background: radial-gradient(
+    ellipse at 50% 20%,
+    rgba(0, 240, 255, 0.16) 0%,
+    rgba(99, 102, 241, 0.1) 40%,
+    rgba(139, 92, 246, 0.05) 60%,
+    transparent 80%
+  );
   pointer-events: none;
   z-index: 0;
+  animation: ambientAura 12s ease-in-out infinite alternate;
+}
+
+@keyframes ambientAura {
+  0% {
+    opacity: 0.8;
+    transform: translateX(-50%) scale(1);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(-50%) scale(1.08);
+  }
 }
 
 body::after {
@@ -84,9 +120,10 @@ body::after {
   position: fixed;
   inset: 0;
   background-image: 
-    linear-gradient(rgba(56, 189, 248, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(56, 189, 248, 0.03) 1px, transparent 1px);
-  background-size: 40px 40px;
+    radial-gradient(circle at 50% 50%, rgba(0, 240, 255, 0.08) 1px, transparent 1px),
+    linear-gradient(rgba(56, 189, 248, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(56, 189, 248, 0.025) 1px, transparent 1px);
+  background-size: 32px 32px, 32px 32px, 32px 32px;
   pointer-events: none;
   z-index: 0;
 }
@@ -100,23 +137,33 @@ body::after {
   font-family: var(--font-display);
 }
 
-/* Container & Layout */
+/* App Container */
 .app-container {
   position: relative;
   z-index: 1;
-  max-width: 1200px;
+  max-width: 1240px;
   margin: 0 auto;
-  padding: 2.5rem 1.5rem;
+  padding: 2rem 1.25rem 4rem;
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: 1.75rem;
 }
 
-/* JARVIS Glass Card */
-.jarvis-card {
+@media (max-width: 640px) {
+  .app-container {
+    padding: 1.25rem 0.85rem 3rem;
+    gap: 1.25rem;
+  }
+}
+
+/* ==========================================================================
+   Cybernetic HUD Cards & Panels (.hud-card, .odin-card)
+   ========================================================================== */
+.hud-card,
+.odin-card {
   background: var(--bg-surface);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
   border: 1px solid var(--border-subtle);
   border-radius: 12px;
   padding: 1.5rem;
@@ -128,46 +175,81 @@ body::after {
   overflow: hidden;
 }
 
-@media (hover: hover) and (pointer: fine) {
-  .jarvis-card:hover {
-    border-color: var(--border-medium);
-    box-shadow: var(--shadow-surface), var(--glow-cyan-sm);
+@media (max-width: 640px) {
+  .hud-card,
+  .odin-card {
+    padding: 1.15rem 1rem;
+    border-radius: 10px;
   }
 }
 
-/* Corner HUD accent line */
-.jarvis-card::before {
+/* Tactical Corner Brackets (Top-Left and Bottom-Right) */
+.hud-card::before,
+.odin-card::before {
   content: "";
   position: absolute;
   top: 0;
   left: 0;
-  width: 48px;
+  width: 32px;
   height: 2px;
   background: linear-gradient(90deg, var(--accent-cyan), transparent);
+  transition: width var(--duration-fast) var(--ease-out-snappy);
 }
 
-/* Buttons with Emil Kowalski press mechanics */
+.hud-card::after,
+.odin-card::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 24px;
+  height: 2px;
+  background: linear-gradient(270deg, var(--accent-cyan), transparent);
+  transition: width var(--duration-fast) var(--ease-out-snappy);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .hud-card:hover,
+  .odin-card:hover {
+    border-color: var(--border-medium);
+    box-shadow: var(--shadow-surface), var(--glow-cyan-sm);
+  }
+
+  .hud-card:hover::before,
+  .odin-card:hover::before {
+    width: 60px;
+  }
+}
+
+/* ==========================================================================
+   Buttons with Apple Tactile Response & Glint Shimmer
+   ========================================================================== */
 .hud-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
   padding: 0.65rem 1.25rem;
+  min-height: 40px;
   font-family: var(--font-mono);
-  font-size: 0.85rem;
-  font-weight: 500;
+  font-size: 0.82rem;
+  font-weight: 600;
   letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--accent-cyan);
-  background: rgba(0, 240, 255, 0.08);
+  background: rgba(0, 240, 255, 0.07);
   border: 1px solid var(--border-medium);
   border-radius: 8px;
   cursor: pointer;
   outline: none;
-  transition: transform var(--duration-fast) var(--ease-out-snappy),
+  position: relative;
+  overflow: hidden;
+  transition: transform var(--duration-instant) var(--ease-out-snappy),
               background var(--duration-fast) var(--ease-out-snappy),
               border-color var(--duration-fast) var(--ease-out-snappy),
-              box-shadow var(--duration-fast) var(--ease-out-snappy);
+              box-shadow var(--duration-fast) var(--ease-out-snappy),
+              color var(--duration-fast) var(--ease-out-snappy);
+  user-select: none;
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -175,59 +257,157 @@ body::after {
     background: rgba(0, 240, 255, 0.16);
     border-color: var(--accent-cyan);
     box-shadow: var(--glow-cyan-sm);
+    color: #ffffff;
   }
 }
 
 .hud-button:active {
   transform: scale(0.97);
+  transition-duration: var(--duration-instant);
 }
 
 .hud-button:disabled {
   opacity: 0.45;
   cursor: not-allowed;
   transform: none;
+  box-shadow: none;
 }
 
-/* Badges & Telemetry Pills */
+/* Mobile Touch Target minimum floor (Apple HIG: 44px) */
+@media (max-width: 640px) {
+  .hud-button {
+    min-height: 44px;
+    padding: 0.75rem 1.1rem;
+    font-size: 0.8rem;
+  }
+}
+
+/* Variant: Tactical Primary Button */
+.hud-button-primary {
+  background: linear-gradient(135deg, rgba(0, 240, 255, 0.22) 0%, rgba(99, 102, 241, 0.25) 100%);
+  border-color: var(--accent-cyan);
+  color: #ffffff;
+  box-shadow: 0 0 16px rgba(0, 240, 255, 0.25);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .hud-button-primary:hover {
+    background: linear-gradient(135deg, rgba(0, 240, 255, 0.35) 0%, rgba(99, 102, 241, 0.35) 100%);
+    box-shadow: var(--glow-cyan);
+  }
+}
+
+/* Variant: Danger / Rose Button */
+.hud-button-danger {
+  color: var(--accent-rose);
+  background: rgba(244, 63, 94, 0.1);
+  border-color: rgba(244, 63, 94, 0.4);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .hud-button-danger:hover {
+    background: rgba(244, 63, 94, 0.22);
+    border-color: var(--accent-rose);
+    box-shadow: 0 0 14px rgba(244, 63, 94, 0.35);
+    color: #ffffff;
+  }
+}
+
+/* Variant: Amber / Warning Button */
+.hud-button-warning {
+  color: var(--accent-amber);
+  background: rgba(245, 158, 11, 0.1);
+  border-color: rgba(245, 158, 11, 0.4);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .hud-button-warning:hover {
+    background: rgba(245, 158, 11, 0.22);
+    border-color: var(--accent-amber);
+    box-shadow: var(--glow-amber-sm);
+    color: #ffffff;
+  }
+}
+
+/* Variant: Emerald / Success Button */
+.hud-button-success {
+  color: #34d399;
+  background: rgba(16, 185, 129, 0.1);
+  border-color: rgba(16, 185, 129, 0.4);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .hud-button-success:hover {
+    background: rgba(16, 185, 129, 0.22);
+    border-color: #34d399;
+    box-shadow: var(--glow-emerald-sm);
+    color: #ffffff;
+  }
+}
+
+/* ==========================================================================
+   Badges & Telemetry Status Pills
+   ========================================================================== */
 .status-pill {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.45rem;
   padding: 0.25rem 0.65rem;
   border-radius: 9999px;
   font-family: var(--font-mono);
   font-size: 0.72rem;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
   font-weight: 600;
   border: 1px solid transparent;
+  white-space: nowrap;
 }
 
 .status-pill.online {
   color: #34d399;
   background: rgba(16, 185, 129, 0.12);
   border-color: rgba(16, 185, 129, 0.35);
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.15);
 }
 
 .status-pill.warning {
   color: #fbbf24;
   background: rgba(245, 158, 11, 0.12);
   border-color: rgba(245, 158, 11, 0.35);
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.15);
 }
 
 .status-pill.cyan {
   color: var(--accent-cyan);
   background: rgba(0, 240, 255, 0.1);
-  border-color: rgba(0, 240, 255, 0.3);
+  border-color: rgba(0, 240, 255, 0.32);
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.2);
 }
 
-/* Pulse Dot */
+.status-pill.rose {
+  color: #fda4af;
+  background: rgba(244, 63, 94, 0.12);
+  border-color: rgba(244, 63, 94, 0.35);
+  box-shadow: 0 0 10px rgba(244, 63, 94, 0.15);
+}
+
+/* Quantum Core Pulse Dot */
 .pulse-dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
   background-color: var(--accent-emerald);
-  box-shadow: 0 0 8px var(--accent-emerald);
-  animation: pulseGlow 2s infinite var(--ease-in-out-smooth);
+  box-shadow: 0 0 10px var(--accent-emerald);
+  animation: pulseGlow 1.8s infinite var(--ease-in-out-smooth);
+}
+
+.pulse-dot.cyan {
+  background-color: var(--accent-cyan);
+  box-shadow: 0 0 10px var(--accent-cyan);
+}
+
+.pulse-dot.amber {
+  background-color: var(--accent-amber);
+  box-shadow: 0 0 10px var(--accent-amber);
 }
 
 @keyframes pulseGlow {
@@ -236,97 +416,101 @@ body::after {
     opacity: 1;
   }
   50% {
-    transform: scale(1.3);
-    opacity: 0.6;
+    transform: scale(1.35);
+    opacity: 0.55;
   }
 }
 
-/* Grid for Dashboard */
-.hud-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 1.5rem;
-}
-
-/* Security Clearance Passcode Gate Inputs */
+/* ==========================================================================
+   Tactical Form Inputs & Textareas
+   ========================================================================== */
 .hud-input {
   width: 100%;
-  padding: 0.65rem 1rem;
+  padding: 0.7rem 1rem;
   font-family: var(--font-mono);
   font-size: 0.85rem;
   color: var(--text-primary);
-  background: rgba(13, 21, 45, 0.8);
+  background: rgba(10, 18, 42, 0.8);
   border: 1px solid var(--border-subtle);
   border-radius: 8px;
   outline: none;
+  min-height: 42px;
   transition: border-color var(--duration-fast) var(--ease-out-snappy),
-              box-shadow var(--duration-fast) var(--ease-out-snappy);
+              box-shadow var(--duration-fast) var(--ease-out-snappy),
+              background var(--duration-fast) var(--ease-out-snappy);
 }
 
 .hud-input:focus {
   border-color: var(--accent-cyan);
   box-shadow: var(--glow-cyan-sm);
+  background: rgba(12, 22, 52, 0.95);
 }
 
 .hud-input::placeholder {
   color: var(--text-muted);
 }
 
-/* Form Textareas */
 .hud-textarea {
   width: 100%;
-  padding: 0.75rem 1rem;
+  padding: 0.85rem 1rem;
   font-family: var(--font-sans);
   font-size: 0.9rem;
   color: var(--text-primary);
-  background: rgba(13, 21, 45, 0.8);
+  background: rgba(10, 18, 42, 0.8);
   border: 1px solid var(--border-subtle);
   border-radius: 8px;
   outline: none;
   resize: vertical;
-  min-height: 90px;
-  line-height: 1.5;
+  min-height: 95px;
+  line-height: 1.55;
   transition: border-color var(--duration-fast) var(--ease-out-snappy),
-              box-shadow var(--duration-fast) var(--ease-out-snappy);
+              box-shadow var(--duration-fast) var(--ease-out-snappy),
+              background var(--duration-fast) var(--ease-out-snappy);
 }
 
 .hud-textarea:focus {
   border-color: var(--accent-cyan);
   box-shadow: var(--glow-cyan-sm);
+  background: rgba(12, 22, 52, 0.95);
 }
 
 .hud-textarea::placeholder {
   color: var(--text-muted);
 }
 
-.hud-textarea:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-  background: rgba(10, 15, 30, 0.5);
-  border-color: rgba(255, 255, 255, 0.06);
-  user-select: none;
-}
-
+.hud-textarea:disabled,
 .hud-input:disabled {
   opacity: 0.45;
   cursor: not-allowed;
+  background: rgba(6, 12, 28, 0.6);
+  border-color: rgba(255, 255, 255, 0.05);
+  user-select: none;
 }
 
-/* Tabs Navigation */
+/* ==========================================================================
+   Tactical Persona Tabs Navigation
+   ========================================================================== */
 .hud-tabs {
   display: flex;
   gap: 0.5rem;
   border-bottom: 1px solid var(--border-subtle);
-  padding-bottom: 0.75rem;
+  padding-bottom: 0.65rem;
   margin-bottom: 1.5rem;
   overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.hud-tabs::-webkit-scrollbar {
+  display: none;
 }
 
 .hud-tab {
-  padding: 0.5rem 1rem;
+  padding: 0.55rem 1.1rem;
   font-family: var(--font-mono);
   font-size: 0.8rem;
   font-weight: 600;
+  letter-spacing: 0.04em;
   color: var(--text-secondary);
   background: transparent;
   border: 1px solid transparent;
@@ -334,56 +518,281 @@ body::after {
   cursor: pointer;
   white-space: nowrap;
   transition: all var(--duration-fast) var(--ease-out-snappy);
+  user-select: none;
 }
 
 .hud-tab:hover {
   color: var(--accent-cyan);
-  background: rgba(0, 240, 255, 0.05);
+  background: rgba(0, 240, 255, 0.06);
 }
 
 .hud-tab.active {
-  color: var(--accent-cyan);
-  background: rgba(0, 240, 255, 0.12);
+  color: #ffffff;
+  background: rgba(0, 240, 255, 0.16);
   border-color: var(--border-medium);
   box-shadow: var(--glow-cyan-sm);
 }
 
-
-
-/* Staggered entrance */
-.stagger-item {
-  opacity: 0;
-  transform: scale(0.97) translateY(8px);
-  animation: entranceFadeIn 320ms var(--ease-out-snappy) forwards;
+/* ==========================================================================
+   Voice Mic Sonic Radar Wave & Equalizer Animations (Milestone 4)
+   ========================================================================== */
+.sonic-radar-container {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.stagger-item:nth-child(1) { animation-delay: 40ms; }
-.stagger-item:nth-child(2) { animation-delay: 80ms; }
-.stagger-item:nth-child(3) { animation-delay: 120ms; }
-.stagger-item:nth-child(4) { animation-delay: 160ms; }
-.stagger-item:nth-child(5) { animation-delay: 200ms; }
+.sonic-radar-ring {
+  position: absolute;
+  inset: -6px;
+  border-radius: 12px;
+  border: 1.5px solid var(--accent-cyan);
+  pointer-events: none;
+  animation: sonicRadar 1.5s cubic-bezier(0, 0.2, 0.8, 1) infinite;
+}
 
-@keyframes entranceFadeIn {
+@keyframes sonicRadar {
+  0% {
+    transform: scale(0.9);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(1.45);
+    opacity: 0;
+  }
+}
+
+/* Audio Spectrum Visualizer (Voice Readback) */
+.eq-spectrum {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 20px;
+  padding: 0 4px;
+}
+
+.eq-bar {
+  width: 3px;
+  background: var(--accent-cyan);
+  border-radius: 1.5px;
+  box-shadow: 0 0 6px var(--accent-cyan);
+  animation: eqBounce 1.2s ease-in-out infinite alternate;
+}
+
+.eq-bar:nth-child(1) { height: 6px; animation-delay: 0.1s; }
+.eq-bar:nth-child(2) { height: 16px; animation-delay: 0.3s; }
+.eq-bar:nth-child(3) { height: 10px; animation-delay: 0.2s; }
+.eq-bar:nth-child(4) { height: 18px; animation-delay: 0.45s; }
+.eq-bar:nth-child(5) { height: 8px; animation-delay: 0.15s; }
+.eq-bar:nth-child(6) { height: 14px; animation-delay: 0.35s; }
+.eq-bar:nth-child(7) { height: 5px; animation-delay: 0.25s; }
+
+@keyframes eqBounce {
+  0% { height: 4px; opacity: 0.5; }
+  100% { height: 18px; opacity: 1; }
+}
+
+/* ==========================================================================
+   Cybernetic Scanning Laser Progress Bar (Live Synthesis)
+   ========================================================================== */
+.laser-progress-container {
+  height: 5px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
+  overflow: hidden;
+  position: relative;
+}
+
+.laser-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #38bdf8, #00f0ff, #818cf8);
+  box-shadow: var(--glow-cyan-sm);
+  transition: width 0.4s var(--ease-out-snappy);
+  position: relative;
+}
+
+.laser-progress-fill::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 40px;
+  background: linear-gradient(90deg, transparent, #ffffff);
+  box-shadow: 0 0 12px #ffffff;
+  animation: laserSweep 1.2s ease-in-out infinite;
+}
+
+@keyframes laserSweep {
+  0% { opacity: 0.3; }
+  50% { opacity: 1; }
+  100% { opacity: 0.3; }
+}
+
+/* ==========================================================================
+   Modals & Bottom Sheet Mechanics (.hud-modal-backdrop, .hud-modal-card)
+   ========================================================================== */
+.hud-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background-color: rgba(3, 7, 18, 0.85);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  animation: backdropFadeIn var(--duration-fast) var(--ease-out-snappy) forwards;
+}
+
+@keyframes backdropFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.hud-modal-card {
+  background: var(--bg-glass-modal);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid var(--border-medium);
+  box-shadow: 0 20px 50px -10px rgba(0, 0, 0, 0.8), var(--glow-cyan-sm);
+  border-radius: 14px;
+  width: 100%;
+  max-width: 520px;
+  padding: 1.75rem;
+  position: relative;
+  overflow: hidden;
+  animation: modalScaleIn var(--duration-normal) var(--ease-spring) forwards;
+}
+
+@keyframes modalScaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.94) translateY(10px);
+  }
   to {
     opacity: 1;
     transform: scale(1) translateY(0);
   }
 }
 
-/* Voice Audio Equalizer Keyframes (Milestone 4) */
-@keyframes eqBar1 {
-  0%, 100% { height: 4px; }
-  50% { height: 16px; }
+@media (max-width: 640px) {
+  .hud-modal-backdrop {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .hud-modal-card {
+    max-width: 100%;
+    border-radius: 18px 18px 0 0;
+    border-bottom: none;
+    padding: 1.5rem 1.25rem 2.5rem;
+    animation: sheetSlideUp var(--duration-normal) var(--ease-out-snappy) forwards;
+  }
 }
 
-@keyframes eqBar2 {
-  0%, 100% { height: 14px; }
-  50% { height: 6px; }
+@keyframes sheetSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-@keyframes eqBar3 {
-  0%, 100% { height: 8px; }
-  50% { height: 18px; }
+/* ==========================================================================
+   Case History Drawer Native CSS Overhaul (.hud-drawer-*)
+   ========================================================================== */
+.hud-drawer-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.hud-search-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.85rem 1.1rem;
+  background: rgba(8, 14, 32, 0.85);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+}
+
+.hud-search-input-group {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex: 1;
+  min-width: 240px;
+}
+
+.hud-search-input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  outline: none;
+}
+
+.hud-search-input::placeholder {
+  color: var(--text-muted);
+}
+
+.hud-dossier-card {
+  padding: 1.15rem;
+  background: rgba(10, 18, 42, 0.75);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  position: relative;
+  transition: border-color var(--duration-fast) var(--ease-out-snappy),
+              background var(--duration-fast) var(--ease-out-snappy),
+              box-shadow var(--duration-fast) var(--ease-out-snappy);
+}
+
+.hud-dossier-card:hover {
+  border-color: var(--border-medium);
+  background: rgba(14, 25, 55, 0.85);
+  box-shadow: 0 4px 20px -4px rgba(0, 240, 255, 0.12);
+}
+
+.hud-dossier-card.active {
+  border-color: var(--accent-cyan);
+  background: rgba(12, 26, 60, 0.9);
+  box-shadow: var(--glow-cyan-sm);
+}
+
+/* ==========================================================================
+   Staggered Fade-in Animation
+   ========================================================================== */
+.stagger-item {
+  opacity: 0;
+  transform: scale(0.97) translateY(8px);
+  animation: entranceFadeIn 320ms var(--ease-out-snappy) forwards;
+}
+
+.stagger-item:nth-child(1) { animation-delay: 30ms; }
+.stagger-item:nth-child(2) { animation-delay: 70ms; }
+.stagger-item:nth-child(3) { animation-delay: 110ms; }
+.stagger-item:nth-child(4) { animation-delay: 150ms; }
+.stagger-item:nth-child(5) { animation-delay: 190ms; }
+
+@keyframes entranceFadeIn {
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }
 
 /* Reduced Motion Override */

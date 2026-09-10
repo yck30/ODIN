@@ -2,7 +2,7 @@
 
 O.D.I.N. is a zero-cost decision-support system built upon a strict 5-layer agentic architecture, combining conversational intelligence with deterministic guardrails.
 
-## Tech Stack (Phase 2: JARVIS Interface)
+## Tech Stack (Phase 2: Cybernetic Command Interface)
 - **Frontend/Backend:** Next.js (React) with serverless API routes
 - **Hosting:** Vercel (Free tier)
 - **Voice I/O:** Browser-native Web Speech API (`SpeechRecognition` + `SpeechSynthesis`)

@@ -22,7 +22,7 @@ const SAMPLE_DILEMMA = {
   narrative: "We currently have 2 enterprise pilot contracts ($60k ARR each) in verbal agreement, but one prospect's procurement team has been unresponsive for 14 days. Meanwhile, our organic self-serve product is getting 120 signups/week with no paid acquisition, but free-to-paid conversion on the $39/mo tier is only 1.1%. The engineering team is pushing to scrap enterprise and focus 100% on PLG, while our lead investor insists on high-ACV enterprise accounts. We cannot afford to miss payroll in month 7.",
 };
 
-export default function JarvisDashboard() {
+export default function OdinCommandDashboard() {
   const [health, setHealth] = useState<HealthResponse | null>(null);
   const [loadingHealth, setLoadingHealth] = useState<boolean>(true);
   const [currentTime, setCurrentTime] = useState<string>("");
@@ -478,11 +478,11 @@ export default function JarvisDashboard() {
   return (
     <main className="app-container">
       {/* HUD Header */}
-      <header className="jarvis-card stagger-item">
+      <header className="hud-card stagger-item">
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "1rem" }}>
           <div>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "0.25rem" }}>
-              <h1 className="font-display" style={{ fontSize: "2rem", letterSpacing: "0.1em", color: "var(--text-primary)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "0.25rem", flexWrap: "wrap" }}>
+              <h1 className="font-display" style={{ fontSize: "clamp(1.4rem, 4vw, 2.2rem)", letterSpacing: "0.08em", color: "var(--text-primary)" }}>
                 O.D.I.N.
               </h1>
               <span className="status-pill online">
@@ -491,8 +491,8 @@ export default function JarvisDashboard() {
               </span>
               <span className="status-pill cyan">v1.2.0 (Phase 2)</span>
             </div>
-            <p style={{ color: "var(--text-secondary)", fontSize: "0.9rem" }}>
-              Operational Decision Intelligence Network — JARVIS Executive Interface
+            <p style={{ color: "var(--text-secondary)", fontSize: "0.85rem" }}>
+              Operational Decision Intelligence Network — Cybernetic Command Console
             </p>
           </div>
 
@@ -500,7 +500,7 @@ export default function JarvisDashboard() {
             <div className="font-mono" style={{ fontSize: "0.85rem", color: "var(--accent-cyan)", letterSpacing: "0.05em" }}>
               {currentTime || "INITIALIZING CLOCK..."}
             </div>
-            <div className="font-mono" style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginTop: "0.2rem" }}>
+            <div className="font-mono" style={{ fontSize: "0.72rem", color: "var(--text-muted)", marginTop: "0.2rem" }}>
               VERCEL ZERO-COST RUNTIME
             </div>
           </div>
@@ -508,10 +508,10 @@ export default function JarvisDashboard() {
       </header>
 
       {/* Security Clearance Gate Card (M2.5) */}
-      <section className="jarvis-card stagger-item" style={{ borderLeft: passcode ? "3px solid var(--accent-emerald)" : "3px solid var(--accent-amber)" }}>
+      <section className="hud-card stagger-item" style={{ borderLeft: passcode ? "3px solid var(--accent-emerald)" : "3px solid var(--accent-amber)" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem" }}>
-          <div>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
+          <div style={{ flex: "1 1 320px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", flexWrap: "wrap" }}>
               <h2 className="font-display" style={{ fontSize: "1.05rem", color: "var(--text-primary)", letterSpacing: "0.06em" }}>
                 SECURITY CLEARANCE GATE
               </h2>
@@ -522,7 +522,7 @@ export default function JarvisDashboard() {
                 <span className="status-pill cyan">QUOTA GUARD ARMED</span>
               )}
             </div>
-            <p style={{ color: "var(--text-secondary)", fontSize: "0.82rem", marginTop: "0.3rem" }}>
+            <p style={{ color: "var(--text-secondary)", fontSize: "0.82rem", marginTop: "0.3rem", lineHeight: 1.5 }}>
               {passcode
                 ? "Terminal authenticated. Requests to /api/analyze automatically attach authorized security credentials."
                 : "Engine calls are gated against unauthorized public bot traffic. Enter the secret access passcode to unlock the terminal."}
@@ -533,21 +533,21 @@ export default function JarvisDashboard() {
             {passcode ? (
               <button
                 onClick={handleRevokePasscode}
-                className="hud-button"
-                style={{ borderColor: "rgba(244, 63, 94, 0.4)", color: "var(--accent-rose)", fontSize: "0.75rem" }}
+                className="hud-button hud-button-danger"
+                style={{ fontSize: "0.75rem", minHeight: "38px" }}
               >
                 REVOKE CLEARANCE
               </button>
             ) : (
-              <form onSubmit={handleSavePasscode} style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
-                <div style={{ position: "relative", display: "inline-flex", alignItems: "center" }}>
+              <form onSubmit={handleSavePasscode} style={{ display: "flex", gap: "0.5rem", alignItems: "center", flexWrap: "wrap" }}>
+                <div style={{ position: "relative", display: "inline-flex", alignItems: "center", flex: "1 1 200px" }}>
                   <input
                     type={showPasscode ? "text" : "password"}
                     placeholder="Enter Access Passcode..."
                     value={passcodeInput}
                     onChange={(e) => setPasscodeInput(e.target.value)}
                     className="hud-input"
-                    style={{ width: "230px", paddingRight: "2.4rem" }}
+                    style={{ paddingRight: "2.4rem", minHeight: "38px" }}
                     disabled={verifyingPasscode}
                   />
                   <button
@@ -574,8 +574,8 @@ export default function JarvisDashboard() {
                 <button
                   type="submit"
                   disabled={verifyingPasscode || !passcodeInput.trim()}
-                  className="hud-button"
-                  style={{ fontSize: "0.75rem" }}
+                  className="hud-button hud-button-primary"
+                  style={{ fontSize: "0.75rem", minHeight: "38px", whiteSpace: "nowrap" }}
                 >
                   {verifyingPasscode ? "AUTHENTICATING..." : "AUTHORIZE"}
                 </button>
@@ -644,7 +644,7 @@ export default function JarvisDashboard() {
 
       {/* Case History Archive View */}
       {dashboardMode === "history" && (
-        <section className="jarvis-card stagger-item">
+        <section className="hud-card stagger-item">
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.2rem", flexWrap: "wrap", gap: "0.5rem" }}>
             <div>
               <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
@@ -695,7 +695,7 @@ export default function JarvisDashboard() {
 
       {/* Decision Intake Console */}
       {dashboardMode === "intake" && (
-      <section className="jarvis-card stagger-item">
+      <section className="hud-card stagger-item">
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.2rem", flexWrap: "wrap", gap: "0.5rem" }}>
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
@@ -710,57 +710,55 @@ export default function JarvisDashboard() {
               Submit high-stakes dilemmas for 4-persona mathematical, strategic, and behavioral arbitration.
             </p>
           </div>
-          <div style={{ display: "flex", gap: "0.5rem" }}>
+
+          <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
             <button
               onClick={handleLoadSample}
               disabled={!passcode || analyzing}
               className="hud-button"
-              style={{ fontSize: "0.75rem", padding: "0.4rem 0.8rem" }}
-              title={!passcode ? "Authorize passcode above to load sample dilemma" : "Load sample dilemma"}
+              style={{ fontSize: "0.75rem", padding: "0.4rem 0.8rem", minHeight: "34px" }}
             >
-              LOAD SAMPLE DILEMMA
+              Load Sample Dilemma
             </button>
             <button
               onClick={handleClearForm}
               disabled={!passcode || analyzing}
               className="hud-button"
-              style={{ fontSize: "0.75rem", padding: "0.4rem 0.8rem", color: "var(--text-muted)", borderColor: "var(--border-subtle)" }}
-              title={!passcode ? "Terminal is locked" : "Clear fields"}
+              style={{ fontSize: "0.75rem", padding: "0.4rem 0.8rem", minHeight: "34px", color: "var(--text-muted)", borderColor: "var(--border-subtle)" }}
             >
-              CLEAR
+              Clear Fields
             </button>
           </div>
         </div>
 
-        {/* Lock Banner when Unauthorized */}
         {!passcode && (
           <div
             style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: "1rem",
               padding: "0.85rem 1.1rem",
-              marginBottom: "1.2rem",
               background: "rgba(245, 158, 11, 0.08)",
               border: "1px dashed rgba(245, 158, 11, 0.45)",
               borderRadius: "8px",
-              color: "var(--accent-amber)",
+              marginBottom: "1.2rem",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              flexWrap: "wrap",
+              gap: "0.75rem",
             }}
           >
             <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
               <span style={{ fontSize: "1.25rem" }}>🔒</span>
               <div>
-                <div className="font-mono" style={{ fontSize: "0.82rem", fontWeight: 700, letterSpacing: "0.04em" }}>
+                <div className="font-mono" style={{ fontSize: "0.82rem", fontWeight: 700, letterSpacing: "0.04em", color: "var(--accent-amber)" }}>
                   TERMINAL LOCKED — SECURITY CLEARANCE REQUIRED
                 </div>
                 <div style={{ fontSize: "0.78rem", color: "var(--text-secondary)", marginTop: "0.15rem" }}>
-                  All intake fields and reasoning synthesis controls are locked. Please authenticate via the Security Clearance Gate above to initialize the terminal.
+                  Please enter your passcode in the Security Clearance Gate above to unlock intake fields and execution controls.
                 </div>
               </div>
             </div>
             <span className="status-pill warning" style={{ whiteSpace: "nowrap" }}>
-              GATE RESTRICTED
+              ENGINE CALLS GATED
             </span>
           </div>
         )}
@@ -779,7 +777,7 @@ export default function JarvisDashboard() {
             </div>
             <textarea
               className="hud-textarea"
-              placeholder={!passcode ? "[TERMINAL LOCKED] Authenticate via Security Clearance Gate above to enter core objectives..." : "e.g. Determine whether to pivot GTM strategy from enterprise direct sales to self-serve PLG..."}
+              placeholder={!passcode ? "[TERMINAL LOCKED] Authenticate via Security Clearance Gate above to enter objectives..." : "State the explicit outcome or decision goal (e.g., PLG pivot vs enterprise enterprise sales)..."}
               value={coreObjectives}
               onChange={(e) => setCoreObjectives(e.target.value)}
               disabled={!passcode || analyzing}
@@ -800,7 +798,7 @@ export default function JarvisDashboard() {
             </div>
             <textarea
               className="hud-textarea"
-              placeholder={!passcode ? "[TERMINAL LOCKED] Authenticate via Security Clearance Gate above to enter constraints..." : "e.g. 6 months of cash remaining ($300k). 4 engineers, 1 sales lead. Must achieve cash flow break-even before month 7..."}
+              placeholder={!passcode ? "[TERMINAL LOCKED] Authenticate via Security Clearance Gate above to enter constraints..." : "Runway, headcount, non-negotiable boundaries, cash constraints..."}
               value={knownConstraints}
               onChange={(e) => setKnownConstraints(e.target.value)}
               disabled={!passcode || analyzing}
@@ -850,11 +848,12 @@ export default function JarvisDashboard() {
             <button
               onClick={handleExecuteAnalysis}
               disabled={!passcode || analyzing || !coreObjectives.trim() || !knownConstraints.trim() || !rawNarrative.trim()}
-              className="hud-button"
+              className={`hud-button ${passcode && !analyzing ? "hud-button-primary" : ""}`}
               style={{
-                padding: "0.8rem 1.75rem",
+                padding: "0.85rem 1.85rem",
                 fontSize: "0.9rem",
                 fontWeight: 700,
+                minHeight: "46px",
                 ...(!passcode ? { borderColor: "rgba(245, 158, 11, 0.4)", color: "var(--accent-amber)" } : {}),
               }}
             >
@@ -867,19 +866,24 @@ export default function JarvisDashboard() {
           </div>
         </div>
 
-        {/* Live Streaming Stage Indicator */}
+        {/* Live Streaming Stage Indicator (Laser Progress Bar) */}
         {analyzing && (
-          <div style={{ marginTop: "1.5rem", padding: "1rem", background: "rgba(0, 240, 255, 0.06)", border: "1px solid var(--accent-cyan)", borderRadius: "8px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-              <span className="pulse-dot" />
-              <span className="font-mono" style={{ color: "var(--accent-cyan)", fontSize: "0.85rem" }}>
-                {analysisStage}
+          <div style={{ marginTop: "1.5rem", padding: "1.1rem", background: "rgba(0, 240, 255, 0.06)", border: "1px solid var(--accent-cyan)", borderRadius: "10px" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.75rem", marginBottom: "0.75rem" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
+                <span className="pulse-dot cyan" />
+                <span className="font-mono" style={{ color: "var(--accent-cyan)", fontSize: "0.85rem", fontWeight: 700 }}>
+                  {analysisStage}
+                </span>
+              </div>
+              <span className="status-pill cyan" style={{ fontSize: "0.68rem" }}>
+                ACTIVE REASONING
               </span>
             </div>
-            <div style={{ marginTop: "0.75rem", height: "3px", background: "rgba(255,255,255,0.1)", borderRadius: "2px", overflow: "hidden" }}>
+            <div className="laser-progress-container">
               <div
+                className="laser-progress-fill"
                 style={{
-                  height: "100%",
                   width: analysisStage.includes("Stage 1")
                     ? "25%"
                     : analysisStage.includes("Stage 2")
@@ -889,9 +893,6 @@ export default function JarvisDashboard() {
                     : analysisStage.includes("Stage 4")
                     ? "95%"
                     : "15%",
-                  background: "var(--accent-cyan)",
-                  boxShadow: "var(--glow-cyan-sm)",
-                  transition: "width 0.4s ease-out",
                 }}
               />
             </div>
@@ -902,7 +903,7 @@ export default function JarvisDashboard() {
 
       {/* Analysis Deliverables Panel (Rendered on Complete or Historic Inspection) */}
       {analysisResult && (
-        <section className="jarvis-card stagger-item" id="deliverables-panel">
+        <section className="hud-card stagger-item" id="deliverables-panel">
           {/* Historic Session Decrypted Banner (FR-15 & FR-17) */}
           {historicMetadata && (
             <div
@@ -1125,7 +1126,7 @@ export default function JarvisDashboard() {
           {/* TAB 1: THE JUDGE */}
           {activeTab === "judge" && (
             <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
-              {/* JARVIS Audio Readback Controller (Milestone 4) */}
+              {/* O.D.I.N. Tactical Voice Readback Controller */}
               <VoiceReadbackController
                 synthesis={analysisResult.judge.synthesis}
                 nextActions={analysisResult.judge.next_3_actions}
@@ -1320,8 +1321,12 @@ export default function JarvisDashboard() {
             <div style={{ display: "flex", flexDirection: "column", gap: "1.2rem" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div>
-                  <h3 style={{ fontSize: "1.05rem", fontWeight: 700 }}>Cognitive Bias Audit & Blind Spots</h3>
-                  <p style={{ color: "var(--text-secondary)", fontSize: "0.85rem" }}>{analysisResult.behaviorist.summary}</p>
+                  <h3 className="font-display" style={{ fontSize: "1.05rem", color: "var(--accent-violet)", letterSpacing: "0.05em" }}>
+                    COGNITIVE BIAS AUDIT & BLIND SPOTS
+                  </h3>
+                  <p style={{ color: "var(--text-secondary)", fontSize: "0.85rem", marginTop: "0.2rem" }}>
+                    {analysisResult.behaviorist.summary}
+                  </p>
                 </div>
                 <span className="status-pill cyan">Confidence: {analysisResult.behaviorist.confidence}</span>
               </div>
@@ -1351,7 +1356,7 @@ export default function JarvisDashboard() {
 
               <div style={{ padding: "1rem", background: "var(--bg-card-subtle)", borderRadius: "8px", border: "1px solid var(--border-subtle)" }}>
                 <h4 className="font-mono" style={{ fontSize: "0.8rem", color: "var(--accent-blue)", marginBottom: "0.5rem" }}>
-                  BEHAVIORAL AUDIT
+                  BEHAVIORAL AUDIT REASONING
                 </h4>
                 <p style={{ fontSize: "0.85rem", color: "var(--text-secondary)", whiteSpace: "pre-line", lineHeight: 1.6 }}>
                   {analysisResult.behaviorist.reasoning}
@@ -1365,7 +1370,7 @@ export default function JarvisDashboard() {
       {/* Grid: Health Telemetry & Architecture Layers */}
       <div className="hud-grid">
         {/* Environment Diagnostics Card */}
-        <section className="jarvis-card stagger-item">
+        <section className="hud-card stagger-item">
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.2rem" }}>
             <h2 className="font-display" style={{ fontSize: "1.1rem", color: "var(--accent-cyan)", letterSpacing: "0.06em" }}>
               SYSTEM DIAGNOSTICS
@@ -1374,7 +1379,7 @@ export default function JarvisDashboard() {
               onClick={fetchHealth}
               disabled={loadingHealth}
               className="hud-button"
-              style={{ padding: "0.4rem 0.8rem", fontSize: "0.75rem" }}
+              style={{ padding: "0.4rem 0.8rem", fontSize: "0.75rem", minHeight: "34px" }}
             >
               {loadingHealth ? "PROBING..." : "RE-PROBE"}
             </button>
@@ -1436,7 +1441,7 @@ export default function JarvisDashboard() {
         </section>
 
         {/* 5-Layer Agent Architecture Status */}
-        <section className="jarvis-card stagger-item">
+        <section className="hud-card stagger-item">
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.2rem" }}>
             <h2 className="font-display" style={{ fontSize: "1.1rem", color: "var(--accent-blue)", letterSpacing: "0.06em" }}>
               AIM ARCHITECTURE LAYERS
@@ -1484,31 +1489,10 @@ export default function JarvisDashboard() {
 
       {/* FR-27 Opportunistic Outcome Capture Prompt */}
       {opportunisticPrecedent && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            zIndex: 9999,
-            backgroundColor: "rgba(3, 7, 18, 0.85)",
-            backdropFilter: "blur(8px)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "1rem",
-          }}
-        >
-          <div
-            className="jarvis-card"
-            style={{
-              maxWidth: "520px",
-              width: "100%",
-              borderColor: "var(--accent-cyan)",
-              boxShadow: "0 0 35px rgba(0, 240, 255, 0.25)",
-              padding: "1.5rem",
-            }}
-          >
+        <div className="hud-modal-backdrop">
+          <div className="hud-modal-card">
             <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginBottom: "0.8rem" }}>
-              <span style={{ fontSize: "1.2rem" }}>⚡</span>
+              <span style={{ fontSize: "1.3rem" }}>⚡</span>
               <h3 className="font-display" style={{ fontSize: "1.1rem", color: "var(--accent-cyan)", letterSpacing: "0.05em" }}>
                 HISTORICAL PRECEDENT DETECTED
               </h3>
@@ -1516,74 +1500,53 @@ export default function JarvisDashboard() {
 
             <div
               style={{
-                backgroundColor: "rgba(15, 23, 42, 0.6)",
-                border: "1px solid rgba(255, 255, 255, 0.08)",
+                backgroundColor: "rgba(10, 18, 42, 0.8)",
+                border: "1px solid var(--border-subtle)",
                 borderRadius: "8px",
-                padding: "0.8rem",
+                padding: "0.85rem",
                 marginBottom: "1rem",
-                fontSize: "0.8rem",
+                fontSize: "0.82rem",
               }}
             >
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.3rem" }}>
-                <span className="font-mono" style={{ fontSize: "0.7rem", color: "var(--text-muted)" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.35rem", flexWrap: "wrap", gap: "0.3rem" }}>
+                <span className="font-mono" style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>
                   SIMILAR PAST DECISION ({Math.round((opportunisticPrecedent.similarity || 0) * 100)}% MATCH):
                 </span>
-                <span className="font-mono" style={{ fontSize: "0.7rem", color: "var(--accent-cyan)" }}>
+                <span className="status-pill cyan" style={{ fontSize: "0.68rem", padding: "0.1rem 0.45rem" }}>
                   {opportunisticPrecedent.date}
                 </span>
               </div>
-              <div style={{ fontWeight: 600, color: "var(--text-primary)" }}>
+              <div style={{ fontWeight: 600, color: "var(--text-primary)", lineHeight: 1.45 }}>
                 &quot;{opportunisticPrecedent.core_objectives}&quot;
               </div>
             </div>
 
-            <p style={{ fontSize: "0.82rem", color: "var(--text-secondary)", marginBottom: "1.2rem", lineHeight: 1.5 }}>
+            <p style={{ fontSize: "0.85rem", color: "var(--text-secondary)", marginBottom: "1.25rem", lineHeight: 1.55 }}>
               Before synthesizing your new dilemma, did you follow the path recommended in this earlier decision? Recording your result enriches the Judge&apos;s outcome-weighting memory.
             </p>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.5rem" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: "0.5rem" }}>
                 <button
                   onClick={() => handleOpportunisticDecision("followed_path")}
-                  className="hud-button"
-                  style={{
-                    fontSize: "0.75rem",
-                    padding: "0.6rem 0.4rem",
-                    textAlign: "center",
-                    backgroundColor: "rgba(16, 185, 129, 0.15)",
-                    borderColor: "rgba(16, 185, 129, 0.5)",
-                    color: "#34d399",
-                  }}
+                  className="hud-button hud-button-success"
+                  style={{ minHeight: "44px" }}
                 >
                   ✓ Followed
                 </button>
                 <button
                   onClick={() => handleOpportunisticDecision("deviated")}
-                  className="hud-button"
-                  style={{
-                    fontSize: "0.75rem",
-                    padding: "0.6rem 0.4rem",
-                    textAlign: "center",
-                    backgroundColor: "rgba(245, 158, 11, 0.15)",
-                    borderColor: "rgba(245, 158, 11, 0.5)",
-                    color: "#fbbf24",
-                  }}
+                  className="hud-button hud-button-warning"
+                  style={{ minHeight: "44px" }}
                 >
                   ⚡ Deviated
                 </button>
                 <button
                   onClick={() => handleOpportunisticDecision("still_deciding")}
-                  className="hud-button"
-                  style={{
-                    fontSize: "0.75rem",
-                    padding: "0.6rem 0.4rem",
-                    textAlign: "center",
-                    backgroundColor: "rgba(59, 130, 246, 0.15)",
-                    borderColor: "rgba(59, 130, 246, 0.5)",
-                    color: "#60a5fa",
-                  }}
+                  className="hud-button hud-button-primary"
+                  style={{ minHeight: "44px" }}
                 >
-                  ⏳ Deciding
+                  ⏳ Still Deciding
                 </button>
               </div>
 
@@ -1591,7 +1554,7 @@ export default function JarvisDashboard() {
                 onClick={() => handleOpportunisticDecision(undefined)}
                 style={{
                   marginTop: "0.4rem",
-                  padding: "0.5rem",
+                  padding: "0.6rem",
                   background: "transparent",
                   border: "none",
                   color: "var(--text-muted)",
@@ -1610,38 +1573,18 @@ export default function JarvisDashboard() {
 
       {/* Manual Outcome Modal (FR-30) */}
       {isOutcomeModalOpen && activeSessionId && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            zIndex: 9999,
-            backgroundColor: "rgba(3, 7, 18, 0.85)",
-            backdropFilter: "blur(8px)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "1rem",
-          }}
-        >
-          <div
-            className="jarvis-card"
-            style={{
-              maxWidth: "500px",
-              width: "100%",
-              borderColor: "var(--accent-cyan)",
-              padding: "1.5rem",
-            }}
-          >
+        <div className="hud-modal-backdrop">
+          <div className="hud-modal-card">
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
                 <span>📝</span>
-                <h3 className="font-display" style={{ fontSize: "1.05rem", color: "var(--accent-cyan)" }}>
+                <h3 className="font-display" style={{ fontSize: "1.05rem", color: "var(--accent-cyan)", letterSpacing: "0.05em" }}>
                   RECORD DECISION OUTCOME
                 </h3>
               </div>
               <button
                 onClick={() => setIsOutcomeModalOpen(false)}
-                style={{ background: "transparent", border: "none", color: "var(--text-muted)", cursor: "pointer", fontSize: "1rem" }}
+                style={{ background: "transparent", border: "none", color: "var(--text-muted)", cursor: "pointer", fontSize: "1.1rem" }}
               >
                 ✕
               </button>
@@ -1649,49 +1592,31 @@ export default function JarvisDashboard() {
 
             <form onSubmit={handleSaveModalOutcome} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
               <div>
-                <label className="font-mono" style={{ fontSize: "0.75rem", color: "var(--accent-cyan)", display: "block", marginBottom: "0.4rem" }}>
+                <label className="font-mono" style={{ fontSize: "0.72rem", color: "var(--accent-cyan)", display: "block", marginBottom: "0.45rem", fontWeight: 700 }}>
                   EXECUTION STATUS (REQUIRED)
                 </label>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.5rem" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: "0.5rem" }}>
                   <button
                     type="button"
                     onClick={() => setModalOutcomeStatus("followed_path")}
-                    className="hud-button"
-                    style={{
-                      fontSize: "0.75rem",
-                      padding: "0.5rem",
-                      backgroundColor: modalOutcomeStatus === "followed_path" ? "rgba(16, 185, 129, 0.25)" : undefined,
-                      borderColor: modalOutcomeStatus === "followed_path" ? "#34d399" : undefined,
-                      color: modalOutcomeStatus === "followed_path" ? "#34d399" : undefined,
-                    }}
+                    className={`hud-button ${modalOutcomeStatus === "followed_path" ? "hud-button-success" : ""}`}
+                    style={{ minHeight: "44px" }}
                   >
                     ✓ Followed
                   </button>
                   <button
                     type="button"
                     onClick={() => setModalOutcomeStatus("deviated")}
-                    className="hud-button"
-                    style={{
-                      fontSize: "0.75rem",
-                      padding: "0.5rem",
-                      backgroundColor: modalOutcomeStatus === "deviated" ? "rgba(245, 158, 11, 0.25)" : undefined,
-                      borderColor: modalOutcomeStatus === "deviated" ? "#fbbf24" : undefined,
-                      color: modalOutcomeStatus === "deviated" ? "#fbbf24" : undefined,
-                    }}
+                    className={`hud-button ${modalOutcomeStatus === "deviated" ? "hud-button-warning" : ""}`}
+                    style={{ minHeight: "44px" }}
                   >
                     ⚡ Deviated
                   </button>
                   <button
                     type="button"
                     onClick={() => setModalOutcomeStatus("still_deciding")}
-                    className="hud-button"
-                    style={{
-                      fontSize: "0.75rem",
-                      padding: "0.5rem",
-                      backgroundColor: modalOutcomeStatus === "still_deciding" ? "rgba(59, 130, 246, 0.25)" : undefined,
-                      borderColor: modalOutcomeStatus === "still_deciding" ? "#60a5fa" : undefined,
-                      color: modalOutcomeStatus === "still_deciding" ? "#60a5fa" : undefined,
-                    }}
+                    className={`hud-button ${modalOutcomeStatus === "still_deciding" ? "hud-button-primary" : ""}`}
+                    style={{ minHeight: "44px" }}
                   >
                     ⏳ Deciding
                   </button>
@@ -1699,8 +1624,8 @@ export default function JarvisDashboard() {
               </div>
 
               <div>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.3rem" }}>
-                  <label className="font-mono" style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.35rem" }}>
+                  <label className="font-mono" style={{ fontSize: "0.72rem", color: "var(--text-secondary)" }}>
                     REFLECTIVE NARRATIVE & LESSONS (OPTIONAL)
                   </label>
                   <span className="font-mono" style={{ fontSize: "0.68rem", color: "var(--text-muted)" }}>
@@ -1721,15 +1646,15 @@ export default function JarvisDashboard() {
                   type="button"
                   onClick={() => setIsOutcomeModalOpen(false)}
                   className="hud-button"
-                  style={{ fontSize: "0.75rem" }}
+                  style={{ minHeight: "38px" }}
                   disabled={isSavingModalOutcome}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="hud-button primary"
-                  style={{ fontSize: "0.75rem" }}
+                  className="hud-button hud-button-primary"
+                  style={{ minHeight: "38px" }}
                   disabled={isSavingModalOutcome}
                 >
                   {isSavingModalOutcome ? "Saving..." : "Save Outcome"}

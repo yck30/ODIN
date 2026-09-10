@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "O.D.I.N. — Zero-Cost Decision Intelligence System",
-  description: "Phase 2 JARVIS Interface & Knowledge Hub. Operational Decision Intelligence Network running on Next.js, Supabase, and Google Gemini.",
+  description: "Phase 2 Cybernetic Decision Terminal & Knowledge Hub. Operational Decision Intelligence Network running on Next.js, Supabase, and Google Gemini.",
   icons: {
     icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>",
   },

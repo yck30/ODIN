@@ -16,7 +16,7 @@ export interface UseSpeechSynthesisReturn {
 
 /**
  * Hook providing browser-native SpeechSynthesis for reading out Judge verdicts (FR-13).
- * Pitch & Rate tuned to match the tactical JARVIS aesthetic.
+ * Pitch & Rate tuned to match the tactical command HUD aesthetic.
  */
 export function useSpeechSynthesis(): UseSpeechSynthesisReturn {
   const [isSupported, setIsSupported] = useState<boolean>(false);

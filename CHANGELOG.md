@@ -47,7 +47,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added UI triggers for encrypted and decrypted JSON exports in `CaseHistoryDrawer`.
   - Added dynamic amber cybernetic alert card `RECOGNIZED DECISION PATTERN` in the HUD when The Judge identifies semantic precedent.
   - Added content-hygiene security reminder below raw narrative intake field.
-- **Phase 2 Milestone 5 (M5) — JARVIS Case-History Archive & Re-opening Interface**:
+- **Phase 2 Milestone 5 (M5) — Cybernetic Case-History Archive & Re-opening Interface**:
   - Built cybernetic `CaseHistoryDrawer` component (`components/CaseHistoryDrawer.tsx`) providing fast search, filtering, and timestamped dossier listings.
   - Implemented one-tap session re-opening (`handleReopenSession`), populating all 4 persona tabs and decrypting sensitive raw narratives server-side on demand (FR-15 & FR-17).
   - Built in-UI hard deletion (`handleDeleteSession`) with safety confirmation, permanently purging records and vector embeddings from Supabase (FR-21).
@@ -72,7 +72,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Phase 2 Milestone 2.5 (M2.5) — Secret Access Passcode Gate & Quota Protection**:
   - Implemented access control gate via `ODIN_ACCESS_PASSCODE` to safeguard Gemini API quotas on public Vercel deployments.
   - Hardened `/api/analyze` to immediately block unauthorized requests and public crawlers with HTTP 401 before any model execution.
-  - Built JARVIS HUD Security Clearance widget (`app/page.tsx`) with browser credential retention (`localStorage`) and visual clearance levels.
+  - Built Cybernetic HUD Security Clearance widget (`app/page.tsx`) with browser credential retention (`localStorage`) and visual clearance levels.
   - Updated Phase 2 roadmap in `BACKLOG.md` preparing for Supabase Auth and Row-Level Security (RLS) in Milestone 3.
 - **Phase 2 Milestone 2 (M2) — Cognitive Reasoning Engine Ported to Next.js**:
   - Ported the 4-persona sequential reasoning engine (The Quant, The Strategist, The Behaviorist, The Judge) to server-side Next.js using `@google/genai`.
@@ -81,9 +81,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Pinned cognitive engine model string to `gemini-3.6-flash`.
   - Built serverless API route `app/api/analyze/route.ts` with input validation and dual output modes: standard JSON response and Server-Sent Events (SSE) streaming for real-time UI status updates.
   - Implemented end-to-end verification test suite (`scripts/test-engine.ts`) verifying full synthesis, Section 20 schema compliance, 3 sequenced actions, and valid Mermaid.js flowchart generation.
-- **Phase 2 Milestone 1 (M1) — Next.js Scaffold, JARVIS UI & Vercel Deployment**:
+- **Phase 2 Milestone 1 (M1) — Next.js Scaffold, Cybernetic UI & Vercel Deployment**:
   - Bootstrapped Next.js 15 (React 19, TypeScript) App Router scaffold with zero-conflict coexistence alongside legacy Phase 1 Python files.
-  - Implemented JARVIS aesthetic design system (`app/globals.css`) adhering to Emil Kowalski & Impeccable motion principles: custom cubic-bezier easings (`cubic-bezier(0.23, 1, 0.32, 1)`), tactile `:active` press scaling (`0.97`), staggered entrances, and deep space glassmorphic cards.
+  - Implemented cybernetic aesthetic design system (`app/globals.css`) adhering to Emil Kowalski & Impeccable motion principles: custom cubic-bezier easings (`cubic-bezier(0.23, 1, 0.32, 1)`), tactile `:active` press scaling (`0.97`), staggered entrances, and deep space glassmorphic cards.
   - Built real-time HUD telemetry dashboard (`app/page.tsx`) with 5-Layer AIM architecture status monitors and dynamic environment probe widgets.
   - Implemented safe runtime configuration validation (`lib/env.ts`) and serverless diagnostic route (`app/api/health/route.ts`) enforcing zero secret leakage into client bundles or API payloads.
   - Hardened `.gitignore` to prevent secret leakage (`.env*.local`, `node_modules/`, `.next/`), verified clean passing of `gitleaks` pre-commit hook.
