@@ -1245,7 +1245,7 @@ export default function OdinCommandDashboard() {
 
           {/* TAB 1: THE JUDGE */}
           {activeTab === "judge" && (
-            <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+            <div className="persona-tab-content" style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
               {/* O.D.I.N. Tactical Voice Readback Controller */}
               <VoiceReadbackController
                 synthesis={analysisResult.judge.synthesis}
@@ -1350,7 +1350,7 @@ export default function OdinCommandDashboard() {
 
           {/* TAB 2: THE QUANT */}
           {activeTab === "quant" && (
-            <div style={{ display: "flex", flexDirection: "column", gap: "1.2rem" }}>
+            <div className="persona-tab-content" style={{ display: "flex", flexDirection: "column", gap: "1.2rem" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div>
                   <h3 style={{ fontSize: "1.05rem", fontWeight: 700 }}>Operations Research & Expected Value</h3>
@@ -1391,7 +1391,7 @@ export default function OdinCommandDashboard() {
 
           {/* TAB 3: THE STRATEGIST */}
           {activeTab === "strategist" && (
-            <div style={{ display: "flex", flexDirection: "column", gap: "1.2rem" }}>
+            <div className="persona-tab-content" style={{ display: "flex", flexDirection: "column", gap: "1.2rem" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div>
                   <h3 style={{ fontSize: "1.05rem", fontWeight: 700 }}>Game Theory & Reversibility Ranking</h3>
@@ -1438,7 +1438,7 @@ export default function OdinCommandDashboard() {
 
           {/* TAB 4: THE BEHAVIORIST */}
           {activeTab === "behaviorist" && (
-            <div style={{ display: "flex", flexDirection: "column", gap: "1.2rem" }}>
+            <div className="persona-tab-content" style={{ display: "flex", flexDirection: "column", gap: "1.2rem" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div>
                   <h3 className="font-display" style={{ fontSize: "1.05rem", color: "var(--accent-violet)", letterSpacing: "0.05em" }}>

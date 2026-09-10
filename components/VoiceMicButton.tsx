@@ -129,6 +129,7 @@ export default function VoiceMicButton({ label, onTranscript, disabled = false }
             minHeight: "34px",
             padding: "0.3rem 0.8rem",
             fontSize: "0.75rem",
+            transition: "transform var(--duration-fast) var(--ease-out-snappy), box-shadow var(--duration-fast) var(--ease-out-snappy), border-color var(--duration-fast) var(--ease-out-snappy)",
             ...(isListening
               ? {
                   borderColor: "var(--accent-cyan)",
