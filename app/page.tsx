@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import MermaidViewer from "@/components/MermaidViewer";
 import VoiceMicButton from "@/components/VoiceMicButton";
 import VoiceReadbackController from "@/components/VoiceReadbackController";
@@ -76,6 +76,39 @@ export default function OdinCommandDashboard() {
   const [modalOutcomeStatus, setModalOutcomeStatus] = useState<"followed_path" | "deviated" | "still_deciding">("followed_path");
   const [modalOutcomeNarrative, setModalOutcomeNarrative] = useState("");
   const [isSavingModalOutcome, setIsSavingModalOutcome] = useState(false);
+
+  // Abort Controller & Keyboard Accelerator Refs
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const inputsRef = useRef({
+    passcode,
+    analyzing,
+    coreObjectives,
+    knownConstraints,
+    rawNarrative,
+    opportunisticPrecedent,
+    isOutcomeModalOpen,
+    dashboardMode,
+  });
+  inputsRef.current = {
+    passcode,
+    analyzing,
+    coreObjectives,
+    knownConstraints,
+    rawNarrative,
+    opportunisticPrecedent,
+    isOutcomeModalOpen,
+    dashboardMode,
+  };
+
+  const handleAbort = useCallback(() => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+      setAnalyzing(false);
+      setAnalysisStage("Synthesis aborted by command.");
+      setAnalysisError("Cognitive synthesis aborted by user command [ESC].");
+    }
+  }, []);
 
   const fetchSessions = async (activeCode?: string) => {
     const code = activeCode || passcode || (typeof window !== "undefined" ? localStorage.getItem("odin_passcode") : "") || "";
@@ -194,11 +227,18 @@ export default function OdinCommandDashboard() {
     }
   };
 
+  const executeAnalysisRef = useRef<() => Promise<void>>(() => Promise.resolve());
+  const runStreamingAnalysisRef = useRef<() => Promise<void>>(() => Promise.resolve());
+
   useEffect(() => {
     fetchHealth();
 
-    // Verify stored passcode against server
-    const savedCode = localStorage.getItem("odin_passcode");
+    // Verify stored passcode against server (sessionStorage + localStorage sync)
+    const savedCode =
+      (typeof window !== "undefined"
+        ? sessionStorage.getItem("odin_passcode") || localStorage.getItem("odin_passcode")
+        : "") || "";
+
     if (savedCode) {
       fetch("/api/auth/verify", {
         method: "POST",
@@ -208,8 +248,11 @@ export default function OdinCommandDashboard() {
         .then((res) => {
           if (res.ok) {
             setPasscode(savedCode);
+            sessionStorage.setItem("odin_passcode", savedCode);
+            localStorage.setItem("odin_passcode", savedCode);
             fetchSessions(savedCode);
           } else {
+            sessionStorage.removeItem("odin_passcode");
             localStorage.removeItem("odin_passcode");
             setPasscode("");
             setPasscodeStatus("Stored passcode was invalid and has been purged.");
@@ -226,8 +269,43 @@ export default function OdinCommandDashboard() {
     const timer = setInterval(() => {
       setCurrentTime(new Date().toUTCString().replace("GMT", "UTC"));
     }, 1000);
-    return () => clearInterval(timer);
-  }, []);
+
+    // Global Power-User Keyboard Accelerators ($impeccable adapt)
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Cmd/Ctrl + Enter: Execute Synthesis
+      if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+        const { passcode: p, analyzing: a, coreObjectives: o, knownConstraints: c, rawNarrative: n } = inputsRef.current;
+        if (p && !a && o.trim() && c.trim() && n.trim()) {
+          e.preventDefault();
+          executeAnalysisRef.current();
+        }
+      }
+      // Escape: Abort in-flight run or dismiss modals/history
+      if (e.key === "Escape") {
+        const { analyzing: a, opportunisticPrecedent: opp, isOutcomeModalOpen: omo, dashboardMode: dm } = inputsRef.current;
+        if (a) {
+          e.preventDefault();
+          handleAbort();
+        } else if (opp) {
+          e.preventDefault();
+          setOpportunisticPrecedent(null);
+          runStreamingAnalysisRef.current();
+        } else if (omo) {
+          e.preventDefault();
+          setIsOutcomeModalOpen(false);
+        } else if (dm === "history") {
+          e.preventDefault();
+          setDashboardMode("intake");
+        }
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      clearInterval(timer);
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [handleAbort]);
 
   const handleSavePasscode = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -250,6 +328,7 @@ export default function OdinCommandDashboard() {
       const data = await res.json();
 
       if (res.ok && data.valid) {
+        sessionStorage.setItem("odin_passcode", cleanCode);
         localStorage.setItem("odin_passcode", cleanCode);
         setPasscode(cleanCode);
         fetchSessions(cleanCode);
@@ -267,6 +346,7 @@ export default function OdinCommandDashboard() {
   };
 
   const handleRevokePasscode = () => {
+    sessionStorage.removeItem("odin_passcode");
     localStorage.removeItem("odin_passcode");
     setPasscode("");
     setSessionsList([]);
@@ -299,6 +379,9 @@ export default function OdinCommandDashboard() {
     setAnalyzing(true);
     setAnalysisStage("Initializing cognitive personas...");
 
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
     try {
       const headers: Record<string, string> = {
         "Content-Type": "application/json",
@@ -311,6 +394,7 @@ export default function OdinCommandDashboard() {
       const response = await fetch("/api/analyze?stream=true", {
         method: "POST",
         headers,
+        signal: controller.signal,
         body: JSON.stringify({
           core_objectives: coreObjectives,
           known_constraints: knownConstraints,
@@ -372,9 +456,15 @@ export default function OdinCommandDashboard() {
         }
       }
     } catch (err: unknown) {
-      setAnalysisError(err instanceof Error ? err.message : "Cognitive execution encountered an error.");
+      if (err instanceof DOMException && err.name === "AbortError") {
+        setAnalysisStage("Synthesis aborted by command.");
+        setAnalysisError("Cognitive synthesis aborted by user command [ESC].");
+      } else {
+        setAnalysisError(err instanceof Error ? err.message : "Cognitive execution encountered an error.");
+      }
     } finally {
       setAnalyzing(false);
+      abortControllerRef.current = null;
     }
   };
 
@@ -408,6 +498,9 @@ export default function OdinCommandDashboard() {
 
     await runStreamingAnalysis();
   };
+
+  runStreamingAnalysisRef.current = runStreamingAnalysis;
+  executeAnalysisRef.current = handleExecuteAnalysis;
 
   const handleOpportunisticDecision = async (status?: "followed_path" | "deviated" | "still_deciding") => {
     const precedent = opportunisticPrecedent;
@@ -508,7 +601,13 @@ export default function OdinCommandDashboard() {
       </header>
 
       {/* Security Clearance Gate Card (M2.5) */}
-      <section className="hud-card stagger-item" style={{ borderLeft: passcode ? "3px solid var(--accent-emerald)" : "3px solid var(--accent-amber)" }}>
+      <section
+        className="hud-card stagger-item"
+        style={{
+          border: passcode ? "1px solid var(--border-emerald)" : "1px solid var(--border-amber)",
+          boxShadow: passcode ? "var(--glow-cyan-sm)" : "none",
+        }}
+      >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem" }}>
           <div style={{ flex: "1 1 320px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", flexWrap: "wrap" }}>
@@ -861,38 +960,59 @@ export default function OdinCommandDashboard() {
                 ? "🔒 CLEARANCE REQUIRED TO EXECUTE"
                 : analyzing
                 ? "COGNITIVE SYNTHESIS IN PROGRESS..."
-                : "EXECUTE DECISION ANALYSIS"}
+                : "EXECUTE DECISION ANALYSIS [Ctrl+↵]"}
             </button>
           </div>
         </div>
 
-        {/* Live Streaming Stage Indicator (Laser Progress Bar) */}
+        {/* Live Streaming Stage Indicator (Laser Progress Bar with Abort Action) */}
         {analyzing && (
           <div style={{ marginTop: "1.5rem", padding: "1.1rem", background: "rgba(0, 240, 255, 0.06)", border: "1px solid var(--accent-cyan)", borderRadius: "10px" }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.75rem", marginBottom: "0.75rem" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.75rem", marginBottom: "0.75rem", flexWrap: "wrap" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
                 <span className="pulse-dot cyan" />
                 <span className="font-mono" style={{ color: "var(--accent-cyan)", fontSize: "0.85rem", fontWeight: 700 }}>
                   {analysisStage}
                 </span>
               </div>
-              <span className="status-pill cyan" style={{ fontSize: "0.68rem" }}>
-                ACTIVE REASONING
-              </span>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                <span className="status-pill cyan" style={{ fontSize: "0.68rem" }}>
+                  ACTIVE REASONING
+                </span>
+                <button
+                  type="button"
+                  onClick={handleAbort}
+                  className="hud-button hud-button-danger"
+                  style={{
+                    fontSize: "0.72rem",
+                    padding: "0.25rem 0.65rem",
+                    minHeight: "30px",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.35rem",
+                  }}
+                  title="Abort in-flight reasoning (or press Esc)"
+                >
+                  <span>🛑</span>
+                  <span>ABORT RUN [ESC]</span>
+                </button>
+              </div>
             </div>
             <div className="laser-progress-container">
               <div
                 className="laser-progress-fill"
                 style={{
-                  width: analysisStage.includes("Stage 1")
-                    ? "25%"
-                    : analysisStage.includes("Stage 2")
-                    ? "50%"
-                    : analysisStage.includes("Stage 3")
-                    ? "75%"
-                    : analysisStage.includes("Stage 4")
-                    ? "95%"
-                    : "15%",
+                  transform: `scaleX(${
+                    analysisStage.includes("Stage 1")
+                      ? 0.25
+                      : analysisStage.includes("Stage 2")
+                      ? 0.5
+                      : analysisStage.includes("Stage 3")
+                      ? 0.75
+                      : analysisStage.includes("Stage 4")
+                      ? 0.95
+                      : 0.15
+                  })`,
                 }}
               />
             </div>

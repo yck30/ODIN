@@ -52,7 +52,8 @@ export default function VoiceReadbackController({ synthesis, nextActions }: Voic
         alignItems: "center",
         justifyContent: "space-between",
         gap: "1rem",
-        borderLeft: "3px solid var(--accent-cyan)",
+        border: "1px solid var(--border-medium)",
+        boxShadow: isSpeaking && !isPaused ? "var(--glow-cyan-sm)" : "none",
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: "1rem", flex: "1 1 280px" }}>

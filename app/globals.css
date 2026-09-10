@@ -48,7 +48,7 @@
   /* Motion & Spring Mechanics (Emil Kowalski / Apple WWDC) */
   --ease-out-snappy: cubic-bezier(0.23, 1, 0.32, 1);
   --ease-in-out-smooth: cubic-bezier(0.77, 0, 0.175, 1);
-  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
   --duration-instant: 100ms;
   --duration-fast: 180ms;
   --duration-normal: 260ms;
@@ -190,10 +190,11 @@ body::after {
   position: absolute;
   top: 0;
   left: 0;
-  width: 32px;
+  width: 36px;
   height: 2px;
   background: linear-gradient(90deg, var(--accent-cyan), transparent);
-  transition: width var(--duration-fast) var(--ease-out-snappy);
+  transform-origin: left;
+  transition: transform var(--duration-fast) var(--ease-out-snappy);
 }
 
 .hud-card::after,
@@ -202,10 +203,11 @@ body::after {
   position: absolute;
   bottom: 0;
   right: 0;
-  width: 24px;
+  width: 28px;
   height: 2px;
   background: linear-gradient(270deg, var(--accent-cyan), transparent);
-  transition: width var(--duration-fast) var(--ease-out-snappy);
+  transform-origin: right;
+  transition: transform var(--duration-fast) var(--ease-out-snappy);
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -217,7 +219,12 @@ body::after {
 
   .hud-card:hover::before,
   .odin-card:hover::before {
-    width: 60px;
+    transform: scaleX(1.75);
+  }
+
+  .hud-card:hover::after,
+  .odin-card:hover::after {
+    transform: scaleX(1.75);
   }
 }
 
@@ -577,7 +584,7 @@ body::after {
   background: var(--accent-cyan);
   border-radius: 1.5px;
   box-shadow: 0 0 6px var(--accent-cyan);
-  animation: eqBounce 1.2s ease-in-out infinite alternate;
+  animation: eqPulse 1.2s ease-in-out infinite alternate;
 }
 
 .eq-bar:nth-child(1) { height: 6px; animation-delay: 0.1s; }
@@ -588,7 +595,7 @@ body::after {
 .eq-bar:nth-child(6) { height: 14px; animation-delay: 0.35s; }
 .eq-bar:nth-child(7) { height: 5px; animation-delay: 0.25s; }
 
-@keyframes eqBounce {
+@keyframes eqPulse {
   0% { height: 4px; opacity: 0.5; }
   100% { height: 18px; opacity: 1; }
 }
@@ -606,9 +613,11 @@ body::after {
 
 .laser-progress-fill {
   height: 100%;
+  width: 100%;
   background: linear-gradient(90deg, #38bdf8, #00f0ff, #818cf8);
   box-shadow: var(--glow-cyan-sm);
-  transition: width 0.4s var(--ease-out-snappy);
+  transform-origin: left;
+  transition: transform 0.4s var(--ease-out-snappy);
   position: relative;
 }
 
@@ -664,7 +673,7 @@ body::after {
   padding: 1.75rem;
   position: relative;
   overflow: hidden;
-  animation: modalScaleIn var(--duration-normal) var(--ease-spring) forwards;
+  animation: modalScaleIn var(--duration-normal) var(--ease-out-snappy) forwards;
 }
 
 @keyframes modalScaleIn {
