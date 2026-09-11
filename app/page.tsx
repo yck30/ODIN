@@ -416,44 +416,80 @@ export default function OdinCommandDashboard() {
 
       const decoder = new TextDecoder();
       let buffer = "";
+      let currentEvent = "";
+      let receivedComplete = false;
+
+      const processLine = (rawLine: string) => {
+        const line = rawLine.trim();
+        if (!line) {
+          return;
+        }
+
+        if (line.startsWith("event: ")) {
+          currentEvent = line.replace("event: ", "").trim();
+          return;
+        }
+
+        if (line.startsWith("data: ")) {
+          const dataStr = line.replace("data: ", "").trim();
+          try {
+            const parsed = JSON.parse(dataStr);
+            if (currentEvent === "progress") {
+              setAnalysisStage(`[Stage ${parsed.step}/${parsed.totalSteps}] ${parsed.message}`);
+            } else if (currentEvent === "complete") {
+              receivedComplete = true;
+              setAnalysisResult(parsed);
+              setActiveTab("judge");
+              setAnalysisStage("Cognitive synthesis complete.");
+              setHistoricMetadata(null);
+              if (parsed.sessionId) {
+                setActiveSessionId(parsed.sessionId);
+              }
+              fetchSessions();
+              setTimeout(() => {
+                const elem = document.getElementById("deliverables-panel");
+                if (elem) {
+                  elem.scrollIntoView({ behavior: "smooth" });
+                }
+              }, 150);
+            } else if (currentEvent === "error") {
+              throw new Error(parsed.message || "Execution error in engine.");
+            }
+          } catch (err: unknown) {
+            if (currentEvent === "error" || (err instanceof Error && err.message.startsWith("Execution error"))) {
+              throw err;
+            }
+            console.error("SSE parsing error:", err, "Raw data:", dataStr);
+          }
+        }
+      };
 
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
 
         buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n");
+        const lines = buffer.split(/\r?\n/);
         buffer = lines.pop() || "";
 
-        let currentEvent = "";
         for (const line of lines) {
-          if (line.startsWith("event: ")) {
-            currentEvent = line.replace("event: ", "").trim();
-          } else if (line.startsWith("data: ")) {
-            const dataStr = line.replace("data: ", "").trim();
-            try {
-              const parsed = JSON.parse(dataStr);
-              if (currentEvent === "progress") {
-                setAnalysisStage(`[Stage ${parsed.step}/${parsed.totalSteps}] ${parsed.message}`);
-              } else if (currentEvent === "complete") {
-                setAnalysisResult(parsed);
-                setActiveTab("judge");
-                setAnalysisStage("Cognitive synthesis complete.");
-                if (parsed.sessionId) {
-                  setActiveSessionId(parsed.sessionId);
-                  setHistoricMetadata({ id: parsed.sessionId, created_at: new Date().toISOString() });
-                }
-                fetchSessions();
-              } else if (currentEvent === "error") {
-                throw new Error(parsed.message || "Execution error in engine.");
-              }
-            } catch (err: unknown) {
-              if (currentEvent === "error") {
-                throw err;
-              }
-            }
-          }
+          processLine(line);
         }
+      }
+
+      // Flush remaining stream buffer
+      buffer += decoder.decode();
+      if (buffer.trim()) {
+        const lines = buffer.split(/\r?\n/);
+        for (const line of lines) {
+          processLine(line);
+        }
+      }
+
+      if (!receivedComplete) {
+        throw new Error(
+          "Reasoning stream ended before receiving final synthesis deliverables. This may indicate a Vercel serverless execution timeout (60s limit) or network interruption."
+        );
       }
     } catch (err: unknown) {
       if (err instanceof DOMException && err.name === "AbortError") {
@@ -1248,8 +1284,8 @@ export default function OdinCommandDashboard() {
             <div className="persona-tab-content" style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
               {/* O.D.I.N. Tactical Voice Readback Controller */}
               <VoiceReadbackController
-                synthesis={analysisResult.judge.synthesis}
-                nextActions={analysisResult.judge.next_3_actions}
+                synthesis={analysisResult.judge.synthesis || ""}
+                nextActions={analysisResult.judge.next_3_actions || []}
               />
 
               {/* Recognized Recurring Pattern Note (Milestone 5.5 / v1.1 Recall) */}
@@ -1293,7 +1329,7 @@ export default function OdinCommandDashboard() {
                   SEQUENCED NEXT 3 ACTIONS (FIRST PRINCIPLES)
                 </h3>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "1rem" }}>
-                  {analysisResult.judge.next_3_actions.map((act, index) => (
+                  {(analysisResult.judge.next_3_actions || []).map((act, index) => (
                     <div
                       key={index}
                       style={{
@@ -1330,7 +1366,7 @@ export default function OdinCommandDashboard() {
                     IDENTIFIED TENSION POINTS
                   </h4>
                   <ul style={{ paddingLeft: "1.2rem", fontSize: "0.85rem", color: "var(--text-secondary)", lineHeight: 1.6 }}>
-                    {analysisResult.judge.tension_points.map((tp, i) => (
+                    {(analysisResult.judge.tension_points || []).map((tp, i) => (
                       <li key={i}>{tp}</li>
                     ))}
                   </ul>

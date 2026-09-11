@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Vercel Engine Synthesis Deliverables Streaming & Display**:
+  - Fixed client-side Server-Sent Events (SSE) reader bug in `app/page.tsx` where `currentEvent` was initialized inside the `while` loop, causing multi-chunk `complete` events to lose event context and silently drop the final Judge synthesis deliverables.
+  - Added stream buffer flush (`decoder.decode()`) on reader completion and actionable error notification if a stream disconnects prematurely.
+  - Added `"X-Accel-Buffering": "no"` to `app/api/analyze/route.ts` to prevent edge proxies from buffering SSE chunks.
+  - Added a 5-second `Promise.race` safety timeout to `persistSessionIfConfigured` in `app/api/analyze/route.ts` to guarantee database latency never blocks the client from receiving the arbitration deliverables.
+  - Added defensive array handling on Judge action and tension point lists to prevent UI render exceptions on schema edge cases.
+
 ### Added
 - **Phase 2 Addendum Milestone N4 (N4) — Section 14 End-to-End QA Suite & $0 Cost Confirmation**:
   - Implemented comprehensive automated test suite (`scripts/test-outcomes-qa.ts`) verifying all 5 Section 14 QA gates:

@@ -119,34 +119,45 @@ async function persistSessionIfConfigured(
   }
 
   try {
-    const serverClient = getServerSupabaseClient();
-    const encryptedHex = encryptNarrativeToHex(intake.raw_narrative);
+    const persistPromise = (async () => {
+      const serverClient = getServerSupabaseClient();
+      const encryptedHex = encryptNarrativeToHex(intake.raw_narrative);
 
-    // Strict privacy boundary (PRD §10): embed Judge synthesis, never raw_narrative
-    const { embedding, model } = await generateEmbedding(result.judge.synthesis, apiKey);
+      // Strict privacy boundary (PRD §10): embed Judge synthesis, never raw_narrative
+      const { embedding, model } = await generateEmbedding(result.judge.synthesis, apiKey);
 
-    const { data, error } = await serverClient
-      .from("sessions")
-      .insert({
-        core_objectives: intake.core_objectives,
-        known_constraints: intake.known_constraints,
-        raw_narrative_encrypted: encryptedHex,
-        quant_output: result.quant,
-        strategist_output: result.strategist,
-        behaviorist_output: result.behaviorist,
-        judge_output: result.judge,
-        narrative_embedding: embedding,
-        embedding_model: model,
-      })
-      .select("id")
-      .single();
+      const { data, error } = await serverClient
+        .from("sessions")
+        .insert({
+          core_objectives: intake.core_objectives,
+          known_constraints: intake.known_constraints,
+          raw_narrative_encrypted: encryptedHex,
+          quant_output: result.quant,
+          strategist_output: result.strategist,
+          behaviorist_output: result.behaviorist,
+          judge_output: result.judge,
+          narrative_embedding: embedding,
+          embedding_model: model,
+        })
+        .select("id")
+        .single();
 
-    if (error) {
-      console.warn("Supabase session persistence warning (skipped):", error.message);
-      return null;
-    }
+      if (error) {
+        console.warn("Supabase session persistence warning (skipped):", error.message);
+        return null;
+      }
 
-    return data?.id || null;
+      return data?.id || null;
+    })();
+
+    const timeoutPromise = new Promise<null>((resolve) =>
+      setTimeout(() => {
+        console.warn("Supabase session persistence timed out after 5s (skipped to preserve client response).");
+        resolve(null);
+      }, 5000)
+    );
+
+    return await Promise.race([persistPromise, timeoutPromise]);
   } catch (err: unknown) {
     console.warn("Supabase persistence notice:", err instanceof Error ? err.message : String(err));
     return null;
@@ -206,6 +217,7 @@ async function persistSessionIfConfigured(
         "Content-Type": "text/event-stream",
         "Cache-Control": "no-cache, no-transform",
         Connection: "keep-alive",
+        "X-Accel-Buffering": "no",
       },
     });
   }
