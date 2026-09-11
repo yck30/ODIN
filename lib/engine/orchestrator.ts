@@ -100,7 +100,18 @@ async function callGeminiWithRetry<T>(
         errString.includes("UNAVAILABLE");
 
       if (isRateLimitOrUnavailable && attempt < maxRetries) {
-        const backoffSec = Math.pow(2, attempt + 2) + 1; // 5s, 9s, 17s
+        // Extract server-mandated retry delay if provided by Google API
+        const retryMatch = errString.match(/retry in ([\d\.]+)s/i) || errString.match(/"retryDelay":\s*"(\d+)s"/i);
+        const serverDelaySec = retryMatch ? Math.ceil(parseFloat(retryMatch[1])) : null;
+
+        // If Google requires waiting > 12s, fail fast with a helpful message instead of exceeding serverless timeouts
+        if (serverDelaySec && serverDelaySec > 12) {
+          throw new Error(
+            `Google Gemini API quota reached: rate limit window active. Please retry in ${serverDelaySec} seconds.`
+          );
+        }
+
+        const backoffSec = serverDelaySec || Math.pow(2, attempt + 1) + 1; // 3s, 5s
         console.warn(`[O.D.I.N. Engine] Rate limit hit (attempt ${attempt + 1}/${maxRetries}). Retrying in ${backoffSec}s...`);
         await sleep(backoffSec * 1000);
         continue;
@@ -141,7 +152,7 @@ export async function runJudge(
 
 /**
  * Executes the complete 4-persona sequential cognitive engine.
- * Sequenced with gentle 2-second pacing pauses to respect free-tier RPM limits.
+ * Optimized for serverless latency: zero artificial delays between personas.
  *
  * FR-23 Strict Persona Independence Rule:
  * pastContext is passed ONLY to runJudge, never to runQuant, runStrategist, or runBehaviorist.
@@ -158,17 +169,14 @@ export async function executeSequentialAnalysis(
   // 1. The Quant (Persona Independence Preserved: No pastContext)
   onProgress?.(1, 4, "The Quant is estimating expected values and probability trees...");
   const quant = await runQuant(ai, intake);
-  await sleep(2000); // Pacing delay
 
   // 2. The Strategist (Persona Independence Preserved: No pastContext)
   onProgress?.(2, 4, "The Strategist is evaluating reversibility and adversarial moves...");
   const strategist = await runStrategist(ai, intake);
-  await sleep(2000); // Pacing delay
 
   // 3. The Behaviorist (Persona Independence Preserved: No pastContext)
   onProgress?.(3, 4, "The Behaviorist is auditing cognitive biases and psychological blind spots...");
   const behaviorist = await runBehaviorist(ai, intake);
-  await sleep(2000); // Pacing delay
 
   // 4. The Judge (Arbitration synthesis with optional past_context)
   onProgress?.(4, 4, "The Judge is synthesizing first principles and cross-referencing past patterns...");

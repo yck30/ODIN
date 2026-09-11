@@ -8,7 +8,7 @@ import { findSimilarPastDecisions } from "@/lib/recall";
 import type { DecisionIntake, FullAnalysisResult } from "@/lib/engine/types";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 60; // 60s timeout for Vercel functions
+export const maxDuration = 300; // Allow up to 300s on Vercel Pro, auto-capped at 60s on Hobby
 
 interface IntakeRequestBody {
   core_objectives?: string;
@@ -174,14 +174,18 @@ async function persistSessionIfConfigured(
         };
 
         try {
-          // Cross-session semantic recall query (Milestone 5.5 / FR-22)
+          // Cross-session semantic recall query (Milestone 5.5 / FR-22) - initiated concurrently
           sendEvent("progress", { step: 0, totalSteps: 4, message: "Cross-referencing memory archive for past decision patterns..." });
-          const pastContext = await findSimilarPastDecisions(
+          const pastContextPromise = findSimilarPastDecisions(
             validation.intake.core_objectives,
             validation.intake.known_constraints,
             apiKey
-          );
+          ).catch((err) => {
+            console.warn("Recall error (proceeding without precedent):", err);
+            return [];
+          });
 
+          const pastContext = await pastContextPromise;
           if (pastContext.length > 0) {
             sendEvent("progress", {
               step: 0,
@@ -199,10 +203,14 @@ async function persistSessionIfConfigured(
             pastContext
           );
 
-          sendEvent("progress", { step: 4, totalSteps: 4, message: "Persisting encrypted decision session..." });
-          const sessionId = await persistSessionIfConfigured(validation.intake, result, apiKey);
+          // Deliver complete synthesis deliverables immediately to client
+          sendEvent("complete", result);
 
-          sendEvent("complete", { ...result, sessionId });
+          // Persist session with safety timeout and notify client of sessionId
+          const sessionId = await persistSessionIfConfigured(validation.intake, result, apiKey);
+          if (sessionId) {
+            sendEvent("persisted", { sessionId });
+          }
         } catch (err: unknown) {
           const errorMessage = err instanceof Error ? err.message : "Cognitive engine failure";
           sendEvent("error", { message: errorMessage });

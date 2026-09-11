@@ -452,6 +452,11 @@ export default function OdinCommandDashboard() {
                   elem.scrollIntoView({ behavior: "smooth" });
                 }
               }, 150);
+            } else if (currentEvent === "persisted") {
+              if (parsed.sessionId) {
+                setActiveSessionId(parsed.sessionId);
+              }
+              fetchSessions();
             } else if (currentEvent === "error") {
               throw new Error(parsed.message || "Execution error in engine.");
             }

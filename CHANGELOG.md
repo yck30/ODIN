@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- **Vercel Serverless Latency Optimization & Rate Limit Protection**:
+  - Removed artificial 2-second sleep delays (`await sleep(2000)`) between personas in `lib/engine/orchestrator.ts`, cutting 6 seconds of dead serverless runtime.
+  - Increased `maxDuration` to 300 in `app/api/analyze/route.ts` to allow up to 5 minutes on Vercel Pro accounts while staying within Hobby limits.
+  - Dispatched `complete` deliverables immediately upon Judge completion without waiting for Supabase encryption and pgvector embedding, streaming deliverables instantly and updating `sessionId` via `persisted` event.
+  - Initiated memory recall (`findSimilarPastDecisions`) concurrently with earlier persona executions, saving 2–4s upfront.
+  - Added smart Google API rate-limit delay extraction in `callGeminiWithRetry` with fail-fast protections if retry delay exceeds serverless execution thresholds.
 - **Vercel Engine Synthesis Deliverables Streaming & Display**:
   - Fixed client-side Server-Sent Events (SSE) reader bug in `app/page.tsx` where `currentEvent` was initialized inside the `while` loop, causing multi-chunk `complete` events to lose event context and silently drop the final Judge synthesis deliverables.
   - Added stream buffer flush (`decoder.decode()`) on reader completion and actionable error notification if a stream disconnects prematurely.
