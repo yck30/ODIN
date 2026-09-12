@@ -367,6 +367,7 @@ body::after {
   font-weight: 600;
   border: 1px solid transparent;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .status-pill.online {

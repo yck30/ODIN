@@ -1392,12 +1392,17 @@ export default function OdinCommandDashboard() {
           {/* TAB 2: THE QUANT */}
           {activeTab === "quant" && (
             <div className="persona-tab-content" style={{ display: "flex", flexDirection: "column", gap: "1.2rem" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div>
-                  <h3 style={{ fontSize: "1.05rem", fontWeight: 700 }}>Operations Research & Expected Value</h3>
-                  <p style={{ color: "var(--text-secondary)", fontSize: "0.85rem" }}>{analysisResult.quant.summary}</p>
+              {/* Header Box with Clear Boundary Separation */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.45rem", paddingBottom: "0.6rem", borderBottom: "1px solid var(--border-subtle)" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
+                  <h3 className="font-display" style={{ fontSize: "1.05rem", fontWeight: 700, color: "var(--text-primary)", letterSpacing: "0.04em" }}>
+                    OPERATIONS RESEARCH & EXPECTED VALUE
+                  </h3>
+                  <span className="status-pill cyan">Confidence: {analysisResult.quant.confidence}</span>
                 </div>
-                <span className="status-pill cyan">Confidence: {analysisResult.quant.confidence}</span>
+                <p style={{ color: "var(--text-secondary)", fontSize: "0.85rem", lineHeight: 1.55 }}>
+                  {analysisResult.quant.summary}
+                </p>
               </div>
 
               <div style={{ padding: "1rem", background: "var(--bg-card-subtle)", borderRadius: "8px", border: "1px solid var(--border-subtle)" }}>
@@ -1407,13 +1412,13 @@ export default function OdinCommandDashboard() {
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
                   {analysisResult.quant.paths.map((p, i) => (
                     <div key={i} style={{ padding: "0.75rem", background: "rgba(0,0,0,0.3)", borderRadius: "6px", border: "1px solid var(--border-subtle)" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.3rem" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.35rem", gap: "0.75rem", flexWrap: "wrap" }}>
                         <span style={{ fontWeight: 600, fontSize: "0.9rem" }}>{p.name}</span>
-                        <span className="font-mono" style={{ color: "var(--accent-cyan)", fontSize: "0.8rem" }}>
+                        <span className="font-mono" style={{ color: "var(--accent-cyan)", fontSize: "0.8rem", flexShrink: 0 }}>
                           {p.probability !== null ? `P: ${(p.probability * 100).toFixed(0)}%` : "Qualitative EV"}
                         </span>
                       </div>
-                      <p style={{ fontSize: "0.82rem", color: "var(--text-secondary)" }}>{p.expected_value_notes}</p>
+                      <p style={{ fontSize: "0.82rem", color: "var(--text-secondary)", lineHeight: 1.5 }}>{p.expected_value_notes}</p>
                     </div>
                   ))}
                 </div>
@@ -1433,14 +1438,19 @@ export default function OdinCommandDashboard() {
           {/* TAB 3: THE STRATEGIST */}
           {activeTab === "strategist" && (
             <div className="persona-tab-content" style={{ display: "flex", flexDirection: "column", gap: "1.2rem" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div>
-                  <h3 style={{ fontSize: "1.05rem", fontWeight: 700 }}>Game Theory & Reversibility Ranking</h3>
-                  <p style={{ color: "var(--text-secondary)", fontSize: "0.85rem" }}>{analysisResult.strategist.summary}</p>
+              {/* Header Box with Clear Boundary Separation */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.45rem", paddingBottom: "0.6rem", borderBottom: "1px solid var(--border-subtle)" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
+                  <h3 className="font-display" style={{ fontSize: "1.05rem", fontWeight: 700, color: "var(--text-primary)", letterSpacing: "0.04em" }}>
+                    GAME THEORY & REVERSIBILITY RANKING
+                  </h3>
+                  <span className={`status-pill ${analysisResult.strategist.domain_framing === "adversarial" ? "warning" : "online"}`}>
+                    Domain: {analysisResult.strategist.domain_framing}
+                  </span>
                 </div>
-                <span className={`status-pill ${analysisResult.strategist.domain_framing === "adversarial" ? "warning" : "online"}`}>
-                  Domain: {analysisResult.strategist.domain_framing}
-                </span>
+                <p style={{ color: "var(--text-secondary)", fontSize: "0.85rem", lineHeight: 1.55 }}>
+                  {analysisResult.strategist.summary}
+                </p>
               </div>
 
               <div style={{ padding: "1rem", background: "var(--bg-card-subtle)", borderRadius: "8px", border: "1px solid var(--border-subtle)" }}>
@@ -1450,7 +1460,7 @@ export default function OdinCommandDashboard() {
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
                   {analysisResult.strategist.reversibility_ranking.map((m, i) => (
                     <div key={i} style={{ padding: "0.75rem", background: "rgba(0,0,0,0.3)", borderRadius: "6px", border: "1px solid var(--border-subtle)" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.3rem" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.35rem", gap: "0.75rem", flexWrap: "wrap" }}>
                         <span style={{ fontWeight: 600, fontSize: "0.9rem" }}>{m.move}</span>
                         <span
                           className={`status-pill ${
@@ -1460,7 +1470,7 @@ export default function OdinCommandDashboard() {
                           Reversibility: {m.reversibility}
                         </span>
                       </div>
-                      <p style={{ fontSize: "0.82rem", color: "var(--text-secondary)" }}>{m.notes}</p>
+                      <p style={{ fontSize: "0.82rem", color: "var(--text-secondary)", lineHeight: 1.5 }}>{m.notes}</p>
                     </div>
                   ))}
                 </div>
@@ -1480,16 +1490,17 @@ export default function OdinCommandDashboard() {
           {/* TAB 4: THE BEHAVIORIST */}
           {activeTab === "behaviorist" && (
             <div className="persona-tab-content" style={{ display: "flex", flexDirection: "column", gap: "1.2rem" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div>
+              {/* Header Box with Clear Boundary Separation */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.45rem", paddingBottom: "0.6rem", borderBottom: "1px solid var(--border-subtle)" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
                   <h3 className="font-display" style={{ fontSize: "1.05rem", color: "var(--accent-violet)", letterSpacing: "0.05em" }}>
                     COGNITIVE BIAS AUDIT & BLIND SPOTS
                   </h3>
-                  <p style={{ color: "var(--text-secondary)", fontSize: "0.85rem", marginTop: "0.2rem" }}>
-                    {analysisResult.behaviorist.summary}
-                  </p>
+                  <span className="status-pill cyan">Confidence: {analysisResult.behaviorist.confidence}</span>
                 </div>
-                <span className="status-pill cyan">Confidence: {analysisResult.behaviorist.confidence}</span>
+                <p style={{ color: "var(--text-secondary)", fontSize: "0.85rem", lineHeight: 1.55 }}>
+                  {analysisResult.behaviorist.summary}
+                </p>
               </div>
 
               <div style={{ padding: "1rem", background: "var(--bg-card-subtle)", borderRadius: "8px", border: "1px solid var(--border-subtle)" }}>
@@ -1499,7 +1510,7 @@ export default function OdinCommandDashboard() {
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "0.75rem" }}>
                   {analysisResult.behaviorist.biases_detected.map((b, i) => (
                     <div key={i} style={{ padding: "0.75rem", background: "rgba(0,0,0,0.3)", borderRadius: "6px", border: "1px solid var(--border-subtle)" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.3rem" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.35rem", gap: "0.5rem", flexWrap: "wrap" }}>
                         <span className="font-mono" style={{ fontWeight: 600, fontSize: "0.85rem", color: "var(--accent-cyan)" }}>
                           {b.bias}
                         </span>
@@ -1507,7 +1518,7 @@ export default function OdinCommandDashboard() {
                           {b.present ? "DETECTED" : "RULED OUT"}
                         </span>
                       </div>
-                      <p style={{ fontSize: "0.8rem", color: "var(--text-secondary)", fontStyle: "italic" }}>
+                      <p style={{ fontSize: "0.8rem", color: "var(--text-secondary)", fontStyle: "italic", lineHeight: 1.5 }}>
                         &quot;{b.evidence}&quot;
                       </p>
                     </div>

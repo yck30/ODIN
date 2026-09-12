@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- **Persona Header Word & Box Boundary Collision Prevention**:
+  - Eliminated word collisions between summary narratives and status pills (e.g. `... across three competing Confidence: high`) by restructuring persona headers into a dedicated title-and-badge row (`justify-content: space-between; gap: 1rem; flex-wrap: wrap;`) with full-width summary text underneath.
+  - Added global `flex-shrink: 0` to `.status-pill` in `app/globals.css` ensuring telemetry badges never compress or collide with neighboring text.
+  - Added explicit flex wrapping, line-height breathing room, and boundary gaps across Quant paths, Strategist reversibility moves, Behaviorist bias items, and Voice Readback banners.
 - **Outcome Modal & Log Details Scrolling & Inspection**:
   - Fixed `.hud-modal-card` overflow clipping by replacing `overflow: hidden` with `overflow-y: auto`, `max-height: calc(100vh - 2.5rem)`, and sleek custom scrollbars, preventing modal buttons and reflection inputs from being clipped on compact viewports.
   - Added scrollable objective and verdict containers (`overflowY: auto`) inside outcome logging modals in `components/CaseHistoryDrawer.tsx` and `app/page.tsx`.

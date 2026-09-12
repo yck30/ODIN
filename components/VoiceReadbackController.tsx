@@ -20,6 +20,8 @@ export default function VoiceReadbackController({ synthesis, nextActions }: Voic
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
+          gap: "1rem",
+          flexWrap: "wrap",
           fontSize: "0.75rem",
           color: "var(--text-muted)",
         }}
