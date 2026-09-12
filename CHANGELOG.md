@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- **Outcome Modal & Log Details Scrolling & Inspection**:
+  - Fixed `.hud-modal-card` overflow clipping by replacing `overflow: hidden` with `overflow-y: auto`, `max-height: calc(100vh - 2.5rem)`, and sleek custom scrollbars, preventing modal buttons and reflection inputs from being clipped on compact viewports.
+  - Added scrollable objective and verdict containers (`overflowY: auto`) inside outcome logging modals in `components/CaseHistoryDrawer.tsx` and `app/page.tsx`.
+  - Added 1-tap "Inspect Full Case Dossier ↗" link inside the modal so users can view the full 4-persona synthesis details before recording execution outcomes.
 - **Gemini Free-Tier Rate Limit Resilience & High-Throughput Failover**:
   - Resolved Google AI Studio free-tier 20 requests/day quota exhaustion by adopting `gemini-3.5-flash-lite` as the standard high-throughput engine model.
   - Implemented automatic on-the-fly model failover in `lib/engine/orchestrator.ts`: automatically falls back from `gemini-3.6-flash` to `gemini-3.5-flash-lite` upon encountering 429 / quota limits.

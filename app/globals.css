@@ -653,6 +653,7 @@ body::after {
   align-items: center;
   justify-content: center;
   padding: 1.25rem;
+  overflow-y: auto;
   animation: backdropFadeIn var(--duration-fast) var(--ease-out-snappy) forwards;
 }
 
@@ -669,11 +670,34 @@ body::after {
   box-shadow: 0 20px 50px -10px rgba(0, 0, 0, 0.8), var(--glow-cyan-sm);
   border-radius: 14px;
   width: 100%;
-  max-width: 520px;
-  padding: 1.75rem;
+  max-width: 540px;
+  max-height: calc(100vh - 2.5rem);
+  max-height: calc(100dvh - 2.5rem);
+  padding: 1.6rem;
   position: relative;
-  overflow: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  display: flex;
+  flex-direction: column;
   animation: modalScaleIn var(--duration-normal) var(--ease-out-snappy) forwards;
+}
+
+.hud-modal-card::-webkit-scrollbar {
+  width: 6px;
+}
+
+.hud-modal-card::-webkit-scrollbar-track {
+  background: rgba(8, 14, 32, 0.5);
+  border-radius: 3px;
+}
+
+.hud-modal-card::-webkit-scrollbar-thumb {
+  background: var(--border-medium);
+  border-radius: 3px;
+}
+
+.hud-modal-card::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-cyan);
 }
 
 @keyframes modalScaleIn {
@@ -695,6 +719,7 @@ body::after {
 
   .hud-modal-card {
     max-width: 100%;
+    max-height: calc(100dvh - 1.5rem);
     border-radius: 18px 18px 0 0;
     border-bottom: none;
     padding: 1.5rem 1.25rem 2.5rem;

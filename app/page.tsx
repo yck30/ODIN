@@ -1752,6 +1752,39 @@ export default function OdinCommandDashboard() {
             </div>
 
             <form onSubmit={handleSaveModalOutcome} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+              {coreObjectives && (
+                <div
+                  style={{
+                    fontSize: "0.78rem",
+                    color: "var(--text-secondary)",
+                    background: "rgba(10, 18, 42, 0.8)",
+                    border: "1px solid var(--border-subtle)",
+                    borderRadius: "8px",
+                    padding: "0.75rem",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "0.35rem",
+                  }}
+                >
+                  <span className="font-mono" style={{ fontSize: "0.68rem", color: "var(--text-muted)" }}>
+                    DECISION OBJECTIVE:
+                  </span>
+                  <div style={{ color: "var(--text-primary)", fontWeight: 600, maxHeight: "90px", overflowY: "auto", lineHeight: 1.45 }}>
+                    {coreObjectives}
+                  </div>
+                  {analysisResult?.judge?.recommended_path && (
+                    <div style={{ marginTop: "0.2rem", paddingTop: "0.35rem", borderTop: "1px dashed var(--border-subtle)" }}>
+                      <span className="font-mono" style={{ fontSize: "0.68rem", color: "var(--accent-cyan)", display: "block", marginBottom: "0.15rem" }}>
+                        RECOMMENDED VERDICT:
+                      </span>
+                      <div style={{ color: "var(--text-secondary)", fontStyle: "italic", maxHeight: "70px", overflowY: "auto", lineHeight: 1.4 }}>
+                        &quot;{analysisResult.judge.recommended_path}&quot;
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div>
                 <label className="font-mono" style={{ fontSize: "0.72rem", color: "var(--accent-cyan)", display: "block", marginBottom: "0.45rem", fontWeight: 700 }}>
                   EXECUTION STATUS (REQUIRED)

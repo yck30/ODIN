@@ -470,12 +470,58 @@ export default function CaseHistoryDrawer({
                 borderRadius: "8px",
                 padding: "0.75rem",
                 marginBottom: "1rem",
+                display: "flex",
+                flexDirection: "column",
+                gap: "0.45rem",
               }}
             >
-              <span className="font-mono" style={{ fontSize: "0.68rem", color: "var(--text-muted)", display: "block", marginBottom: "0.2rem" }}>
-                DECISION OBJECTIVE:
-              </span>
-              <span style={{ color: "var(--text-primary)", fontWeight: 600 }}>{editingOutcomeSession.core_objectives}</span>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "0.4rem" }}>
+                <span className="font-mono" style={{ fontSize: "0.68rem", color: "var(--text-muted)" }}>
+                  DECISION OBJECTIVE:
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const id = editingOutcomeSession.id;
+                    setEditingOutcomeSession(null);
+                    onSelectSession(id);
+                  }}
+                  className="hud-button"
+                  style={{
+                    fontSize: "0.68rem",
+                    padding: "0.15rem 0.45rem",
+                    minHeight: "24px",
+                    borderColor: "var(--border-subtle)",
+                    color: "var(--accent-cyan)",
+                  }}
+                  title="Open full mathematical and strategic arbitration dossier in HUD inspection console"
+                >
+                  Inspect Full Case Dossier ↗
+                </button>
+              </div>
+              <div
+                style={{
+                  color: "var(--text-primary)",
+                  fontWeight: 600,
+                  maxHeight: "100px",
+                  overflowY: "auto",
+                  lineHeight: 1.45,
+                  paddingRight: "0.3rem",
+                }}
+              >
+                {editingOutcomeSession.core_objectives}
+              </div>
+
+              {editingOutcomeSession.recommended_path && (
+                <div style={{ marginTop: "0.2rem", paddingTop: "0.4rem", borderTop: "1px dashed var(--border-subtle)" }}>
+                  <span className="font-mono" style={{ fontSize: "0.68rem", color: "var(--accent-cyan)", display: "block", marginBottom: "0.15rem" }}>
+                    RECOMMENDED VERDICT:
+                  </span>
+                  <div style={{ color: "var(--text-secondary)", fontStyle: "italic", maxHeight: "80px", overflowY: "auto", lineHeight: 1.4 }}>
+                    &quot;{editingOutcomeSession.recommended_path}&quot;
+                  </div>
+                </div>
+              )}
             </div>
 
             {loadingOutcomeDetails ? (
