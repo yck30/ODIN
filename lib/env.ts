@@ -60,7 +60,7 @@ export function getEnvDiagnostics(): SystemEnvDiagnostics {
   const rawModel = process.env.GEMINI_MODEL?.trim();
   const geminiModel =
     !rawModel || rawModel.includes("gemini-2.5") || rawModel.includes("gemini-1.5")
-      ? "gemini-3.6-flash"
+      ? "gemini-3.5-flash-lite"
       : rawModel;
   const supabaseUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL)?.trim();
   const supabaseAnon = (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY)?.trim();
@@ -106,7 +106,7 @@ export function getServerGeminiConfig() {
   const rawModel = process.env.GEMINI_MODEL?.trim();
   const model =
     !rawModel || rawModel.includes("gemini-2.5") || rawModel.includes("gemini-1.5")
-      ? "gemini-3.6-flash"
+      ? "gemini-3.5-flash-lite"
       : rawModel;
 
   return {

@@ -983,7 +983,7 @@ export default function OdinCommandDashboard() {
 
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "0.5rem", flexWrap: "wrap", gap: "1rem" }}>
             <div className="font-mono" style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}>
-              Section 20 Protocol: Quant → Strategist → Behaviorist → Judge (Gemini 3.6 Flash)
+              Section 20 Protocol: Quant → Strategist → Behaviorist → Judge ({health?.diagnostics?.gemini?.model ? health.diagnostics.gemini.model.replace("gemini-", "").replace(/-/g, " ").toUpperCase() : "GEMINI FLASH"})
             </div>
             <button
               onClick={handleExecuteAnalysis}
@@ -1552,7 +1552,7 @@ export default function OdinCommandDashboard() {
               <div>
                 <div style={{ fontWeight: 600, fontSize: "0.9rem" }}>Cognitive Engine (Gemini)</div>
                 <div className="font-mono" style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
-                  Model: {health?.diagnostics?.gemini?.model || "gemini-3.6-flash"}
+                  Model: {health?.diagnostics?.gemini?.model || "gemini-3.5-flash-lite"}
                 </div>
               </div>
               <span className={`status-pill ${health?.diagnostics?.gemini?.configured ? "online" : "warning"}`}>

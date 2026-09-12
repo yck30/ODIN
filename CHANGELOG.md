@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- **Gemini Free-Tier Rate Limit Resilience & High-Throughput Failover**:
+  - Resolved Google AI Studio free-tier 20 requests/day quota exhaustion by adopting `gemini-3.5-flash-lite` as the standard high-throughput engine model.
+  - Implemented automatic on-the-fly model failover in `lib/engine/orchestrator.ts`: automatically falls back from `gemini-3.6-flash` to `gemini-3.5-flash-lite` upon encountering 429 / quota limits.
+  - Replaced aggressive 12s failure abort with paced live status countdown updates via SSE (`"Rate-limit pacing active: Auto-resuming in Xs..."`) up to 65 seconds.
+  - Added 1-second inter-stage cognitive pacing buffer to prevent free-tier burst RPM limits.
+  - Dynamicized UI model status indicators in `app/page.tsx` and updated environment diagnostics in `lib/env.ts`.
 - **Vercel Serverless Latency Optimization & Rate Limit Protection**:
   - Removed artificial 2-second sleep delays (`await sleep(2000)`) between personas in `lib/engine/orchestrator.ts`, cutting 6 seconds of dead serverless runtime.
   - Increased `maxDuration` to 300 in `app/api/analyze/route.ts` to allow up to 5 minutes on Vercel Pro accounts while staying within Hobby limits.
