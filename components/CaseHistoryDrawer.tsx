@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 
 export interface SessionSummary {
   id: string;
@@ -32,6 +33,11 @@ export default function CaseHistoryDrawer({
   const [searchTerm, setSearchTerm] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Manual Outcome Editor Modal State (FR-30)
   const [editingOutcomeSession, setEditingOutcomeSession] = useState<SessionSummary | null>(null);
@@ -436,10 +442,15 @@ export default function CaseHistoryDrawer({
         </div>
       )}
 
-      {/* Manual Outcome Modal (FR-30) */}
-      {editingOutcomeSession && (
-        <div className="hud-modal-backdrop">
-          <div className="hud-modal-card">
+      {/* Manual Outcome Modal (FR-30) Rendered via Portal directly into document.body to avoid parent card clipping */}
+      {mounted && editingOutcomeSession && typeof document !== "undefined" && createPortal(
+        <div
+          className="hud-modal-backdrop"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setEditingOutcomeSession(null);
+          }}
+        >
+          <div className="hud-modal-card" onClick={(e) => e.stopPropagation()}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
                 <span>📝</span>
@@ -616,7 +627,8 @@ export default function CaseHistoryDrawer({
               </form>
             )}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

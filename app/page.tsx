@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef, useCallback } from "react";
+import { createPortal } from "react-dom";
 import MermaidViewer from "@/components/MermaidViewer";
 import VoiceMicButton from "@/components/VoiceMicButton";
 import VoiceReadbackController from "@/components/VoiceReadbackController";
@@ -26,6 +27,7 @@ export default function OdinCommandDashboard() {
   const [health, setHealth] = useState<HealthResponse | null>(null);
   const [loadingHealth, setLoadingHealth] = useState<boolean>(true);
   const [currentTime, setCurrentTime] = useState<string>("");
+  const [mounted, setMounted] = useState<boolean>(false);
 
   // Passcode Security Clearance State
   const [passcode, setPasscode] = useState<string>("");
@@ -231,6 +233,7 @@ export default function OdinCommandDashboard() {
   const runStreamingAnalysisRef = useRef<() => Promise<void>>(() => Promise.resolve());
 
   useEffect(() => {
+    setMounted(true);
     fetchHealth();
 
     // Verify stored passcode against server (sessionStorage + localStorage sync)
@@ -1660,9 +1663,14 @@ export default function OdinCommandDashboard() {
       </div>
 
       {/* FR-27 Opportunistic Outcome Capture Prompt */}
-      {opportunisticPrecedent && (
-        <div className="hud-modal-backdrop">
-          <div className="hud-modal-card">
+      {mounted && opportunisticPrecedent && typeof document !== "undefined" && createPortal(
+        <div
+          className="hud-modal-backdrop"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) handleOpportunisticDecision(undefined);
+          }}
+        >
+          <div className="hud-modal-card" onClick={(e) => e.stopPropagation()}>
             <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginBottom: "0.8rem" }}>
               <span style={{ fontSize: "1.3rem" }}>⚡</span>
               <h3 className="font-display" style={{ fontSize: "1.1rem", color: "var(--accent-cyan)", letterSpacing: "0.05em" }}>
@@ -1740,13 +1748,19 @@ export default function OdinCommandDashboard() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Manual Outcome Modal (FR-30) */}
-      {isOutcomeModalOpen && activeSessionId && (
-        <div className="hud-modal-backdrop">
-          <div className="hud-modal-card">
+      {mounted && isOutcomeModalOpen && activeSessionId && typeof document !== "undefined" && createPortal(
+        <div
+          className="hud-modal-backdrop"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setIsOutcomeModalOpen(false);
+          }}
+        >
+          <div className="hud-modal-card" onClick={(e) => e.stopPropagation()}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
                 <span>📝</span>
@@ -1867,7 +1881,8 @@ export default function OdinCommandDashboard() {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </main>
   );

@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- **Outcome Modal Viewport Isolation & Container Clipping Elimination (React Portals)**:
+  - Fixed modal backdrop and dialog being trapped inside `.hud-card` parent containers by leveraging React Portals (`createPortal(..., document.body)`). Previously, `.hud-card`'s `overflow: hidden` and CSS `animation: fadeInUp` established a local containing block per the CSS spec, forcing `position: fixed` modals to be clipped inside the card boundaries (~400px height) rather than covering the browser viewport.
+  - Portaled all modals (`editingOutcomeSession` in `components/CaseHistoryDrawer.tsx`, and `opportunisticPrecedent` + `isOutcomeModalOpen` in `app/page.tsx`) directly into `document.body` with `z-index: 99999` and `margin: auto; flex-shrink: 0`, guaranteeing full unclipped visibility of headers, objectives, status buttons, textareas, and action buttons.
 - **Persona Header Word & Box Boundary Collision Prevention**:
   - Eliminated word collisions between summary narratives and status pills (e.g. `... across three competing Confidence: high`) by restructuring persona headers into a dedicated title-and-badge row (`justify-content: space-between; gap: 1rem; flex-wrap: wrap;`) with full-width summary text underneath.
   - Added global `flex-shrink: 0` to `.status-pill` in `app/globals.css` ensuring telemetry badges never compress or collide with neighboring text.

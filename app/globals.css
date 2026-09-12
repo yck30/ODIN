@@ -646,14 +646,14 @@ body::after {
 .hud-modal-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 9999;
+  z-index: 99999;
   background-color: rgba(3, 7, 18, 0.85);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 1.25rem;
+  padding: 1.5rem 1rem;
   overflow-y: auto;
   animation: backdropFadeIn var(--duration-fast) var(--ease-out-snappy) forwards;
 }
@@ -680,6 +680,8 @@ body::after {
   overscroll-behavior: contain;
   display: flex;
   flex-direction: column;
+  margin: auto;
+  flex-shrink: 0;
   animation: modalScaleIn var(--duration-normal) var(--ease-out-snappy) forwards;
 }
 
